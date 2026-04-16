@@ -14,6 +14,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.herotraining.data.catalog.HeroCatalog
 import com.herotraining.data.model.Gender
+import com.herotraining.ui.screens.boot.BootSplashScreen
+import com.herotraining.ui.screens.build.BuildSelectScreen
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.gender.GenderSelectScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
@@ -25,7 +27,15 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
     // Shared VM for draft onboarding data across all form screens.
     val onboardingVm: OnboardingViewModel = viewModel()
 
-    NavHost(navController = navController, startDestination = Destinations.GENDER_SELECT) {
+    NavHost(navController = navController, startDestination = Destinations.BOOT) {
+
+        composable(Destinations.BOOT) {
+            BootSplashScreen(onReady = {
+                navController.navigate(Destinations.GENDER_SELECT) {
+                    popUpTo(Destinations.BOOT) { inclusive = true }
+                }
+            })
+        }
 
         composable(Destinations.GENDER_SELECT) {
             GenderSelectScreen(
@@ -95,14 +105,37 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             }
         }
 
-        // Downstream screens — placeholder for now, wired in next commits.
         composable(
             route = Destinations.BUILD_SELECT,
             arguments = listOf(navArgument("heroId") { type = NavType.StringType })
         ) { backStack ->
             val heroId = backStack.arguments?.getString("heroId").orEmpty()
             val hero = HeroCatalog.byId(heroId)
-            HeroPlaceholder(heroName = "${hero?.name ?: heroId} / BuildSelect") {
+            val draft by onboardingVm.draft.collectAsState()
+            val age = draft.profile?.age ?: 0
+            if (hero == null) {
+                HeroPlaceholder(heroName = heroId) { navController.popBackStack() }
+            } else {
+                BuildSelectScreen(
+                    hero = hero,
+                    age = age,
+                    onBack = { navController.popBackStack() },
+                    onSelect = { build ->
+                        onboardingVm.setBuild(build)
+                        navController.navigate(Destinations.nutritionForm(heroId))
+                    }
+                )
+            }
+        }
+
+        // Remaining screens — placeholders for now.
+        composable(
+            route = Destinations.NUTRITION_FORM,
+            arguments = listOf(navArgument("heroId") { type = NavType.StringType })
+        ) { backStack ->
+            val heroId = backStack.arguments?.getString("heroId").orEmpty()
+            val hero = HeroCatalog.byId(heroId)
+            HeroPlaceholder(heroName = "${hero?.name ?: heroId} / NutritionForm") {
                 navController.popBackStack()
             }
         }

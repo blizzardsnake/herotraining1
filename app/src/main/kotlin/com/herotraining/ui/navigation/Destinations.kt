@@ -2,6 +2,7 @@ package com.herotraining.ui.navigation
 
 /** All onboarding + main screens. */
 object Destinations {
+    const val BOOT = "boot"
     const val GENDER_SELECT = "gender"
     const val HERO_SELECT = "hero/{gender}"
     const val PROFILE_FORM = "profile/{gender}/{heroId}"
