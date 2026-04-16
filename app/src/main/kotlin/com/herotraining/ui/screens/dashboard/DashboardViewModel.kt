@@ -38,4 +38,22 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateGear(ids: Set<String>) = viewModelScope.launch { repo.setGear(ids) }
     fun reset() = viewModelScope.launch { repo.reset() }
+
+    fun addLibraryMeal(item: com.herotraining.data.model.FoodItem) = viewModelScope.launch {
+        repo.addMeal(text = item.name, kcal = item.kcal, portion = null, untracked = false, comboDelta = 5)
+    }
+
+    fun addCustomMeal(text: String, portion: com.herotraining.data.catalog.PortionSize) = viewModelScope.launch {
+        repo.addMeal(
+            text = text,
+            kcal = portion.kcal,
+            portion = portion.id,
+            untracked = portion.untracked,
+            comboDelta = if (portion.untracked) 2 else 5
+        )
+    }
+
+    fun removeMeal(meal: com.herotraining.data.model.LoggedMeal) = viewModelScope.launch {
+        repo.deleteMeal(meal)
+    }
 }

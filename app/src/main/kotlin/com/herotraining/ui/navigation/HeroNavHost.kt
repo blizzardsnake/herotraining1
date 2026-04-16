@@ -18,7 +18,7 @@ import com.herotraining.HeroApp
 import com.herotraining.ui.screens.baseline.BaselineTestScreen
 import com.herotraining.ui.screens.boot.BootSplashScreen
 import com.herotraining.ui.screens.build.BuildSelectScreen
-import com.herotraining.ui.screens.dashboard.DashboardScreen
+import com.herotraining.ui.screens.dashboard.DashboardHost
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.gender.GenderSelectScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
@@ -193,11 +193,7 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
         }
 
         composable(Destinations.DASHBOARD) {
-            DashboardScreen(
-                onTraining = { /* sub-screen wiring in next commit */ },
-                onNutrition = { /* sub-screen wiring in next commit */ },
-                onBonus = { /* sub-screen wiring in next commit */ },
-                onGear = { /* sub-screen wiring in next commit */ },
+            DashboardHost(
                 onReset = {
                     scope.launch {
                         app.stateRepository.reset()
