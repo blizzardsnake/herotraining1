@@ -1,6 +1,11 @@
 package com.herotraining.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,12 +14,19 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.herotraining.data.catalog.HeroCatalog
 import com.herotraining.data.model.Gender
+import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.gender.GenderSelectScreen
+import com.herotraining.ui.screens.hero.HeroPlaceholder
 import com.herotraining.ui.screens.hero.HeroSelectScreen
+import com.herotraining.ui.screens.profile.ProfileFormScreen
 
 @Composable
 fun HeroNavHost(navController: NavHostController = rememberNavController()) {
+    // Shared VM for draft onboarding data across all form screens.
+    val onboardingVm: OnboardingViewModel = viewModel()
+
     NavHost(navController = navController, startDestination = Destinations.GENDER_SELECT) {
+
         composable(Destinations.GENDER_SELECT) {
             GenderSelectScreen(
                 onSelect = { gender ->
@@ -22,25 +34,21 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                 }
             )
         }
+
         composable(
             route = Destinations.HERO_SELECT,
             arguments = listOf(navArgument("gender") { type = NavType.StringType })
         ) { backStack ->
-            val genderKey = backStack.arguments?.getString("gender")
-            val gender = Gender.fromKey(genderKey) ?: Gender.MALE
+            val gender = Gender.fromKey(backStack.arguments?.getString("gender")) ?: Gender.MALE
             HeroSelectScreen(
                 gender = gender,
                 onBack = { navController.popBackStack() },
                 onSelect = { hero ->
-                    // Next screen (ProfileForm) will be wired when implemented.
-                    // For now, re-use the route to keep navigation functional once ProfileFormScreen lands.
-                    navController.navigate(Destinations.profileForm(gender.key, hero.id)) {
-                        // keep
-                    }
+                    navController.navigate(Destinations.profileForm(gender.key, hero.id))
                 }
             )
         }
-        // Placeholder so navigating to profileForm doesn't crash while not implemented.
+
         composable(
             route = Destinations.PROFILE_FORM,
             arguments = listOf(
@@ -49,8 +57,52 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             )
         ) { backStack ->
             val heroId = backStack.arguments?.getString("heroId").orEmpty()
+            val genderKey = backStack.arguments?.getString("gender").orEmpty()
             val hero = HeroCatalog.byId(heroId)
-            com.herotraining.ui.screens.hero.HeroPlaceholder(heroName = hero?.name ?: heroId) {
+            val gender = Gender.fromKey(genderKey) ?: Gender.MALE
+            if (hero == null) {
+                HeroPlaceholder(heroName = heroId) { navController.popBackStack() }
+            } else {
+                ProfileFormScreen(
+                    hero = hero,
+                    gender = gender,
+                    onBack = { navController.popBackStack() },
+                    onComplete = { profile ->
+                        onboardingVm.setProfile(profile)
+                        navController.navigate(Destinations.heroGearForm(heroId))
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = Destinations.HERO_GEAR_FORM,
+            arguments = listOf(navArgument("heroId") { type = NavType.StringType })
+        ) { backStack ->
+            val heroId = backStack.arguments?.getString("heroId").orEmpty()
+            val hero = HeroCatalog.byId(heroId)
+            if (hero == null) {
+                HeroPlaceholder(heroName = heroId) { navController.popBackStack() }
+            } else {
+                HeroGearFormScreen(
+                    hero = hero,
+                    onBack = { navController.popBackStack() },
+                    onComplete = { selection ->
+                        onboardingVm.setGear(selection)
+                        navController.navigate(Destinations.buildSelect(heroId))
+                    }
+                )
+            }
+        }
+
+        // Downstream screens — placeholder for now, wired in next commits.
+        composable(
+            route = Destinations.BUILD_SELECT,
+            arguments = listOf(navArgument("heroId") { type = NavType.StringType })
+        ) { backStack ->
+            val heroId = backStack.arguments?.getString("heroId").orEmpty()
+            val hero = HeroCatalog.byId(heroId)
+            HeroPlaceholder(heroName = "${hero?.name ?: heroId} / BuildSelect") {
                 navController.popBackStack()
             }
         }
