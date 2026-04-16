@@ -12,9 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.herotraining.data.catalog.HeroCatalog
 import com.herotraining.data.model.Gender
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import com.herotraining.HeroApp
 import com.herotraining.ui.screens.baseline.BaselineTestScreen
 import com.herotraining.ui.screens.boot.BootSplashScreen
 import com.herotraining.ui.screens.build.BuildSelectScreen
+import com.herotraining.ui.screens.dashboard.DashboardScreen
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.gender.GenderSelectScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
@@ -22,17 +26,25 @@ import com.herotraining.ui.screens.hero.HeroSelectScreen
 import com.herotraining.ui.screens.nutrition.NutritionFormScreen
 import com.herotraining.ui.screens.profile.ProfileFormScreen
 import com.herotraining.ui.screens.summary.OnboardingSummaryScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun HeroNavHost(navController: NavHostController = rememberNavController()) {
     val onboardingVm: OnboardingViewModel = viewModel()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val app = context.applicationContext as HeroApp
+    val scope = rememberCoroutineScope()
 
     NavHost(navController = navController, startDestination = Destinations.BOOT) {
 
         composable(Destinations.BOOT) {
             BootSplashScreen(onReady = {
-                navController.navigate(Destinations.GENDER_SELECT) {
-                    popUpTo(Destinations.BOOT) { inclusive = true }
+                scope.launch {
+                    val onboarded = app.stateRepository.snapshot().onboarded
+                    val target = if (onboarded) Destinations.DASHBOARD else Destinations.GENDER_SELECT
+                    navController.navigate(target) {
+                        popUpTo(Destinations.BOOT) { inclusive = true }
+                    }
                 }
             })
         }
@@ -157,14 +169,23 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             val draft by onboardingVm.draft.collectAsState()
             val profile = draft.profile
             val build = draft.build
-            if (hero == null || profile == null || build == null) {
+            val nutrition = draft.nutrition
+            val baseline = draft.baseline
+            if (hero == null || profile == null || build == null || nutrition == null || baseline == null) {
                 HeroPlaceholder("${hero?.name ?: heroId} / Summary") { navController.popBackStack() }
             } else {
                 OnboardingSummaryScreen(
                     hero = hero, build = build, profile = profile, gear = draft.gear,
                     onContinue = {
-                        navController.navigate(Destinations.DASHBOARD) {
-                            popUpTo(Destinations.BOOT) { inclusive = true }
+                        scope.launch {
+                            app.stateRepository.completeOnboarding(
+                                heroId = hero.id, buildId = build.id,
+                                profile = profile, nutrition = nutrition,
+                                baseline = baseline, gear = draft.gear
+                            )
+                            navController.navigate(Destinations.DASHBOARD) {
+                                popUpTo(Destinations.BOOT) { inclusive = true }
+                            }
                         }
                     }
                 )
@@ -172,7 +193,20 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
         }
 
         composable(Destinations.DASHBOARD) {
-            HeroPlaceholder("Dashboard · в разработке") { navController.popBackStack() }
+            DashboardScreen(
+                onTraining = { /* sub-screen wiring in next commit */ },
+                onNutrition = { /* sub-screen wiring in next commit */ },
+                onBonus = { /* sub-screen wiring in next commit */ },
+                onGear = { /* sub-screen wiring in next commit */ },
+                onReset = {
+                    scope.launch {
+                        app.stateRepository.reset()
+                        navController.navigate(Destinations.GENDER_SELECT) {
+                            popUpTo(Destinations.DASHBOARD) { inclusive = true }
+                        }
+                    }
+                }
+            )
         }
     }
 }
