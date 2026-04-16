@@ -17,6 +17,8 @@ class HeroApp : Application(), Configuration.Provider {
         super.onCreate()
         database = AppDatabase.get(this)
         stateRepository = StateRepository(database)
+        com.herotraining.work.NotificationChannels.ensureCreated(this)
+        com.herotraining.work.WorkScheduler.scheduleAll(this)
     }
 
     override val workManagerConfiguration: Configuration
