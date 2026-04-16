@@ -16,13 +16,26 @@ import kotlinx.coroutines.launch
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val repo: StateRepository = (app as HeroApp).stateRepository
+    private val hc = (app as HeroApp).healthConnect
 
     val state: StateFlow<UserState> = repo.observeState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DEFAULT_USER_STATE)
 
+    private val _steps = kotlinx.coroutines.flow.MutableStateFlow(0L)
+    val steps: StateFlow<Long> = _steps
+
     init {
         viewModelScope.launch { repo.rolloverDayIfNeeded() }
+        viewModelScope.launch { refreshHealth() }
     }
+
+    private suspend fun refreshHealth() {
+        if (hc.hasAllPermissions()) {
+            _steps.value = hc.todaySteps()
+        }
+    }
+
+    fun onHealthPermissionsGranted() = viewModelScope.launch { refreshHealth() }
 
     fun markTraining() = mark(QuestType.TRAINING, rp = 15, comboDelta = 15)
     fun markNutrition() = mark(QuestType.NUTRITION, rp = 10, comboDelta = 10)

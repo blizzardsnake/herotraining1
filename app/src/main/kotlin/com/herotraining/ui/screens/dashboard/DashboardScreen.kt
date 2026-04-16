@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
@@ -237,6 +238,23 @@ fun DashboardScreen(
                         icon = Icons.Filled.Star, label = "ACH",
                         value = state.achievements.size.toString(), accent = hero.color, modifier = Modifier.weight(1f)
                     )
+                }
+
+                val steps by vm.steps.collectAsStateWithLifecycle()
+                if (steps > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral800).padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.DirectionsWalk, contentDescription = null, tint = hero.color, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("HEALTH CONNECT · ШАГИ",
+                                style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral500))
+                            Text("$steps",
+                                style = TextStyle(fontFamily = ImpactLike, fontSize = 20.sp, fontWeight = FontWeight.Black, color = hero.color))
+                        }
+                    }
                 }
 
                 QuestWindow(hero = hero, build = build, state = state)
