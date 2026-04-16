@@ -69,7 +69,7 @@ fun HeroSelectScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "← ПУЛ",
+                text = "← АНКЕТА",
                 style = TextStyle(
                     fontSize = 11.sp,
                     letterSpacing = 2.sp,
@@ -94,7 +94,7 @@ fun HeroSelectScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = if (gender == Gender.FEMALE) "ЖЕНСКИЙ ПУЛ" else "МУЖСКОЙ ПУЛ",
+                text = if (gender == Gender.FEMALE) "ЖЕНСКИЕ ГЕРОИНИ" else "МУЖСКИЕ ГЕРОИ",
                 style = TextStyle(
                     fontSize = 11.sp,
                     letterSpacing = 3.sp,
@@ -167,7 +167,7 @@ private fun HeroCard(hero: Hero, onClick: () -> Unit) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "COMBO: ${hero.comboName}",
+                    text = "КОМБО: ${hero.comboName}",
                     style = TextStyle(
                         fontSize = 10.sp,
                         letterSpacing = 2.sp,

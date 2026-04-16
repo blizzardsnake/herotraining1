@@ -16,11 +16,11 @@ fun getComboStage(combo: Int, hero: Hero): ComboStage {
 }
 
 fun getComboBonus(combo: Int): ComboBonus = when {
-    combo >= 100 -> ComboBonus(2.0, "HERO MODE", "x2 XP · treat без штрафа")
-    combo >= 75 -> ComboBonus(1.5, "ON FIRE", "+50% XP · treat без штрафа")
-    combo >= 50 -> ComboBonus(1.25, "HEATED", "+25% XP")
-    combo >= 25 -> ComboBonus(1.1, "WARMING UP", "+10% XP")
-    else -> ComboBonus(1.0, "COLD", "Нет бонусов")
+    combo >= 100 -> ComboBonus(2.0, "РЕЖИМ ГЕРОЯ", "×2 опыта · читмил без штрафа")
+    combo >= 75 -> ComboBonus(1.5, "В ОГНЕ", "+50% опыта · читмил без штрафа")
+    combo >= 50 -> ComboBonus(1.25, "РАЗОГРЕВ", "+25% опыта")
+    combo >= 25 -> ComboBonus(1.1, "ПРОГРЕВ", "+10% опыта")
+    else -> ComboBonus(1.0, "ХОЛОД", "Нет бонусов")
 }
 
 /** Applies time-based combo decay (same rules as prototype). */

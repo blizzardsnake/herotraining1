@@ -47,14 +47,14 @@ fun GenderSelectScreen(
                 .widthIn(max = 640.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Badge: "HERO TRAINING PROTOCOL" with red border
+            // Badge
             Box(
                 modifier = Modifier
                     .border(1.dp, HeroPalette.Red500)
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "HERO TRAINING PROTOCOL",
+                    text = "ПРОТОКОЛ ГЕРОЯ",
                     style = TextStyle(
                         color = HeroPalette.Red500,
                         fontSize = 11.sp,
@@ -83,7 +83,7 @@ fun GenderSelectScreen(
                 borderColor = HeroPalette.Neutral800
             ) {
                 Text(
-                    text = "МУЖСКОЙ ПУЛ",
+                    text = "МУЖСКИЕ ГЕРОИ",
                     style = TextStyle(
                         fontFamily = ImpactLike,
                         fontSize = 26.sp,
@@ -93,7 +93,7 @@ fun GenderSelectScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Batman · Dante · Kratos · Sung Jin-Woo",
+                    text = "Леон · Данте · Кратос · Сон Джин-У",
                     style = TextStyle(fontSize = 13.sp, color = HeroPalette.Neutral400)
                 )
             }
@@ -105,7 +105,7 @@ fun GenderSelectScreen(
                 borderColor = HeroPalette.Neutral800
             ) {
                 Text(
-                    text = "ЖЕНСКИЙ ПУЛ",
+                    text = "ЖЕНСКИЕ ГЕРОИНИ",
                     style = TextStyle(
                         fontFamily = ImpactLike,
                         fontSize = 26.sp,
@@ -115,7 +115,7 @@ fun GenderSelectScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Catwoman · Lara Croft · 2B · Jill Valentine",
+                    text = "Ада · Лара · 2B · Цири",
                     style = TextStyle(fontSize = 13.sp, color = HeroPalette.Neutral400)
                 )
             }

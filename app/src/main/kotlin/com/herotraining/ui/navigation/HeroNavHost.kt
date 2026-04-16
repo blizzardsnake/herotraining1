@@ -3,6 +3,7 @@ package com.herotraining.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,17 +11,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.herotraining.HeroApp
 import com.herotraining.data.catalog.HeroCatalog
 import com.herotraining.data.model.Gender
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
-import com.herotraining.HeroApp
 import com.herotraining.ui.screens.baseline.BaselineTestScreen
 import com.herotraining.ui.screens.boot.BootSplashScreen
 import com.herotraining.ui.screens.build.BuildSelectScreen
 import com.herotraining.ui.screens.dashboard.DashboardHost
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
-import com.herotraining.ui.screens.gender.GenderSelectScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
 import com.herotraining.ui.screens.hero.HeroSelectScreen
 import com.herotraining.ui.screens.nutrition.NutritionFormScreen
@@ -41,7 +39,7 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             BootSplashScreen(onReady = {
                 scope.launch {
                     val onboarded = app.stateRepository.snapshot().onboarded
-                    val target = if (onboarded) Destinations.DASHBOARD else Destinations.GENDER_SELECT
+                    val target = if (onboarded) Destinations.DASHBOARD else Destinations.PROFILE_INTAKE
                     navController.navigate(target) {
                         popUpTo(Destinations.BOOT) { inclusive = true }
                     }
@@ -49,10 +47,15 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             })
         }
 
-        composable(Destinations.GENDER_SELECT) {
-            GenderSelectScreen(onSelect = { g ->
-                navController.navigate(Destinations.heroSelect(g.key))
-            })
+        // Anketa entry point — age, height, weight, sex, BMI + rest of profile steps
+        composable(Destinations.PROFILE_INTAKE) {
+            ProfileFormScreen(
+                onBack = { /* first real screen — nothing behind */ },
+                onComplete = { profile ->
+                    onboardingVm.setProfile(profile)
+                    navController.navigate(Destinations.heroSelect(profile.sex.key))
+                }
+            )
         }
 
         composable(
@@ -63,28 +66,7 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             HeroSelectScreen(
                 gender = gender,
                 onBack = { navController.popBackStack() },
-                onSelect = { hero -> navController.navigate(Destinations.profileForm(gender.key, hero.id)) }
-            )
-        }
-
-        composable(
-            route = Destinations.PROFILE_FORM,
-            arguments = listOf(
-                navArgument("gender") { type = NavType.StringType },
-                navArgument("heroId") { type = NavType.StringType }
-            )
-        ) { bs ->
-            val heroId = bs.arguments?.getString("heroId").orEmpty()
-            val gender = Gender.fromKey(bs.arguments?.getString("gender")) ?: Gender.MALE
-            val hero = HeroCatalog.byId(heroId)
-            if (hero == null) HeroPlaceholder(heroId) { navController.popBackStack() }
-            else ProfileFormScreen(
-                hero = hero, gender = gender,
-                onBack = { navController.popBackStack() },
-                onComplete = { p ->
-                    onboardingVm.setProfile(p)
-                    navController.navigate(Destinations.heroGearForm(heroId))
-                }
+                onSelect = { hero -> navController.navigate(Destinations.heroGearForm(hero.id)) }
             )
         }
 
@@ -172,7 +154,7 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             val nutrition = draft.nutrition
             val baseline = draft.baseline
             if (hero == null || profile == null || build == null || nutrition == null || baseline == null) {
-                HeroPlaceholder("${hero?.name ?: heroId} / Summary") { navController.popBackStack() }
+                HeroPlaceholder("${hero?.name ?: heroId} / Сводка") { navController.popBackStack() }
             } else {
                 OnboardingSummaryScreen(
                     hero = hero, build = build, profile = profile, gear = draft.gear,
@@ -197,7 +179,7 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                 onReset = {
                     scope.launch {
                         app.stateRepository.reset()
-                        navController.navigate(Destinations.GENDER_SELECT) {
+                        navController.navigate(Destinations.PROFILE_INTAKE) {
                             popUpTo(Destinations.DASHBOARD) { inclusive = true }
                         }
                     }

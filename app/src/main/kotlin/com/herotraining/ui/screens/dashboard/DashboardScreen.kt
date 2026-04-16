@@ -227,15 +227,15 @@ fun DashboardScreen(
                 // Stats row
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatTile(
-                        icon = Icons.Filled.LocalFireDepartment, label = "СТРИК",
+                        icon = Icons.Filled.LocalFireDepartment, label = "СЕРИЯ",
                         value = state.streak.toString(), accent = hero.color, modifier = Modifier.weight(1f)
                     )
                     StatTile(
-                        icon = Icons.Filled.MonetizationOn, label = "COINS",
+                        icon = Icons.Filled.MonetizationOn, label = "МОНЕТЫ",
                         value = state.coins.toString(), accent = hero.color, modifier = Modifier.weight(1f)
                     )
                     StatTile(
-                        icon = Icons.Filled.Star, label = "ACH",
+                        icon = Icons.Filled.Star, label = "ДОСТ.",
                         value = state.achievements.size.toString(), accent = hero.color, modifier = Modifier.weight(1f)
                     )
                 }
@@ -249,7 +249,7 @@ fun DashboardScreen(
                         Icon(Icons.Filled.DirectionsWalk, contentDescription = null, tint = hero.color, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("HEALTH CONNECT · ШАГИ",
+                            Text("ШАГИ ЗА СЕГОДНЯ",
                                 style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral500))
                             Text("$steps",
                                 style = TextStyle(fontFamily = ImpactLike, fontSize = 20.sp, fontWeight = FontWeight.Black, color = hero.color))
@@ -300,7 +300,7 @@ fun DashboardScreen(
 
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "v0.8 · HERO GEAR",
+                    text = "v0.8 · ПРОТОКОЛ АКТИВЕН",
                     style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral700),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )

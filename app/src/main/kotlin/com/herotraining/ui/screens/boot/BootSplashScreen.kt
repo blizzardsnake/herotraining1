@@ -45,17 +45,17 @@ private data class BootLine(
 }
 
 private val BOOT_SEQUENCE = listOf(
-    BootLine("[ BOOT ]", "Инициализация протокола героя...", BootLine.Kind.INFO),
-    BootLine("[ SYS  ]", "Проверка целостности ядра — OK", BootLine.Kind.OK),
-    BootLine("[ AUTH ]", "Распаковка архива воина...", BootLine.Kind.INFO),
-    BootLine("[ MEM  ]", "Загрузка дисциплины", BootLine.Kind.INFO),
-    BootLine("[ CORE ]", "Подготовка тела", BootLine.Kind.INFO),
-    BootLine("[ SYNC ]", "Синхронизация с Health Connect", BootLine.Kind.INFO),
-    BootLine("[ MOOD ]", "Калибровка ярости — 87%", BootLine.Kind.OK),
-    BootLine("[ WARN ]", "Жалость отключена", BootLine.Kind.WARN),
-    BootLine("[ WARN ]", "Оправдания заблокированы", BootLine.Kind.WARN),
-    BootLine("[  >  ]", "АКТИВАЦИЯ РЕЖИМА: БЕЗ ОТКАТА", BootLine.Kind.CRIT),
-    BootLine("[ OK   ]", "Протокол готов. Добро пожаловать, воин.", BootLine.Kind.OK),
+    BootLine("[ ЗАПУСК ]", "Инициализация протокола героя...", BootLine.Kind.INFO),
+    BootLine("[ СИСТ.  ]", "Проверка целостности ядра — ОК", BootLine.Kind.OK),
+    BootLine("[ АУТ.   ]", "Распаковка архива воина...", BootLine.Kind.INFO),
+    BootLine("[ ПАМЯТЬ ]", "Загрузка дисциплины", BootLine.Kind.INFO),
+    BootLine("[ ЯДРО   ]", "Подготовка тела", BootLine.Kind.INFO),
+    BootLine("[ СИНХР. ]", "Связь с датчиками здоровья", BootLine.Kind.INFO),
+    BootLine("[ ДУХ    ]", "Калибровка ярости — 87%", BootLine.Kind.OK),
+    BootLine("[ ВНИМ.  ]", "Жалость отключена", BootLine.Kind.WARN),
+    BootLine("[ ВНИМ.  ]", "Оправдания заблокированы", BootLine.Kind.WARN),
+    BootLine("[   >   ]", "АКТИВАЦИЯ РЕЖИМА: БЕЗ ОТКАТА", BootLine.Kind.CRIT),
+    BootLine("[ ГОТОВ  ]", "Протокол готов. Добро пожаловать, воин.", BootLine.Kind.OK),
 )
 
 /**
@@ -106,7 +106,7 @@ fun BootSplashScreen(onReady: () -> Unit) {
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "HERO TRAINING PROTOCOL",
+                    text = "ПРОТОКОЛ ГЕРОЯ",
                     style = TextStyle(
                         color = HeroPalette.Red500,
                         fontSize = 10.sp,
@@ -118,7 +118,7 @@ fun BootSplashScreen(onReady: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = "SYSTEM BOOT v0.1",
+                text = "ЗАПУСК СИСТЕМЫ v0.1",
                 style = TextStyle(
                     fontFamily = ImpactLike,
                     fontWeight = FontWeight.Black,
@@ -156,7 +156,7 @@ fun BootSplashScreen(onReady: () -> Unit) {
             // Progress bar
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "LOAD",
+                    text = "ЗАГРУЗКА",
                     style = TextStyle(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp,

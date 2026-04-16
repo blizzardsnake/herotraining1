@@ -176,12 +176,13 @@ private fun BuildCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp)
+                    .height(420.dp)
             ) {
                 Image(
                     painter = painterResource(portraitRes),
                     contentDescription = build.name,
                     contentScale = ContentScale.Crop,
+                    alignment = Alignment.TopCenter,
                     modifier = Modifier.fillMaxSize()
                 )
                 // Dark gradient overlay for text legibility at bottom

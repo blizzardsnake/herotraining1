@@ -106,7 +106,7 @@ fun TrainingViewScreen(state: UserState, onBack: () -> Unit, onComplete: () -> U
                         Icon(Icons.Filled.Star, contentDescription = null, tint = hero.color, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = "SIGNATURE QUEST",
+                            text = "ФИРМЕННЫЙ КВЕСТ",
                             style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold, color = hero.color)
                         )
                     }

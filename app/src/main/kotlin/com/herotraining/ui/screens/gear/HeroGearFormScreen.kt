@@ -88,7 +88,7 @@ fun HeroGearFormScreen(
                 )
             }
             Text(
-                text = "${hero.name} · HERO GEAR",
+                text = "${hero.name} · СНАРЯЖЕНИЕ ГЕРОЯ",
                 style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, color = HeroPalette.Neutral500)
             )
 
@@ -115,7 +115,7 @@ fun HeroGearFormScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Каждый доступ разблокирует уникальную signature-тренировку ${hero.name} — раз в неделю.",
+                    text = "Каждый доступ открывает фирменную тренировку ${hero.name} — раз в неделю.",
                     style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral400)
                 )
             }
@@ -193,7 +193,7 @@ private fun GearRow(
             }
             Spacer(Modifier.height(3.dp))
             Text(
-                text = "РАЗБЛОКИРУЕТ: ${gear.signature}",
+                text = "ОТКРЫВАЕТ: ${gear.signature}",
                 style = TextStyle(
                     fontSize = 10.sp,
                     letterSpacing = 2.sp,

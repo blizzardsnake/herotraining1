@@ -73,7 +73,7 @@ fun GearViewScreen(state: UserState, onBack: () -> Unit, onSave: (Set<String>) -
                 )
             }
             Text(
-                text = "HERO GEAR · ${hero.name}",
+                text = "СНАРЯЖЕНИЕ · ${hero.name}",
                 style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, color = HeroPalette.Neutral500)
             )
             Spacer(Modifier.height(14.dp))

@@ -2,9 +2,8 @@ package com.herotraining.ui.navigation
 
 object Destinations {
     const val BOOT = "boot"
-    const val GENDER_SELECT = "gender"
+    const val PROFILE_INTAKE = "profile"              // new anketa entry point
     const val HERO_SELECT = "hero/{gender}"
-    const val PROFILE_FORM = "profile/{gender}/{heroId}"
     const val HERO_GEAR_FORM = "gear/{heroId}"
     const val BUILD_SELECT = "build/{heroId}"
     const val NUTRITION_FORM = "nutrition/{heroId}"
@@ -13,7 +12,6 @@ object Destinations {
     const val DASHBOARD = "dashboard"
 
     fun heroSelect(gender: String) = "hero/$gender"
-    fun profileForm(gender: String, heroId: String) = "profile/$gender/$heroId"
     fun heroGearForm(heroId: String) = "gear/$heroId"
     fun buildSelect(heroId: String) = "build/$heroId"
     fun nutritionForm(heroId: String) = "nutrition/$heroId"

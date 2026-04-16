@@ -37,7 +37,7 @@ fun ComboBar(combo: Int, hero: Hero, modifier: Modifier = Modifier) {
         Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${hero.comboName} COMBO",
+                    text = "КОМБО · ${hero.comboName}",
                     style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, color = hero.color.copy(alpha = 0.7f))
                 )
                 Text(
