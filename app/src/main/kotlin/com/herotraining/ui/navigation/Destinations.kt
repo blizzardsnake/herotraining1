@@ -1,6 +1,5 @@
 package com.herotraining.ui.navigation
 
-/** All onboarding + main screens. */
 object Destinations {
     const val BOOT = "boot"
     const val GENDER_SELECT = "gender"
@@ -10,7 +9,7 @@ object Destinations {
     const val BUILD_SELECT = "build/{heroId}"
     const val NUTRITION_FORM = "nutrition/{heroId}"
     const val BASELINE_TEST = "baseline/{heroId}"
-    const val SUMMARY = "summary/{heroId}/{buildId}"
+    const val SUMMARY = "summary/{heroId}"
     const val DASHBOARD = "dashboard"
 
     fun heroSelect(gender: String) = "hero/$gender"
@@ -19,5 +18,5 @@ object Destinations {
     fun buildSelect(heroId: String) = "build/$heroId"
     fun nutritionForm(heroId: String) = "nutrition/$heroId"
     fun baselineTest(heroId: String) = "baseline/$heroId"
-    fun summary(heroId: String, buildId: String) = "summary/$heroId/$buildId"
+    fun summary(heroId: String) = "summary/$heroId"
 }
