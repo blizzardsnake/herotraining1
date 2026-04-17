@@ -3,10 +3,17 @@ package com.herotraining.ui.screens.profile_view
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -500,7 +507,13 @@ private fun MeasurementsTab(
     onAdd: () -> Unit, onDelete: (MeasurementEntity) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AddButton("+ НОВЫЙ ЗАМЕР", accent, onAdd)
+        // Sliced CTA from progress.png mockup — replaces the hand-rolled "+ НОВЫЙ ЗАМЕР"
+        // pill with the actual "ДОБАВИТЬ ЗАМЕРЫ +" art (btn_progress_add.webp, 860x95)
+        ArtCtaButton(
+            resId = com.herotraining.R.drawable.btn_progress_add,
+            aspectRatio = 860f / 95f,
+            onClick = onAdd
+        )
         if (list.isEmpty()) EmptyText("Пока нет замеров")
         list.forEach { m ->
             Column(modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral800).padding(12.dp)) {
@@ -618,6 +631,39 @@ private fun DiaryTab(
             }
         }
     }
+}
+
+/**
+ * Sliced-art button from a mockup crop. Press = scale(0.96). Takes full width by default,
+ * height derived from [aspectRatio] so the art stays sharp at any screen size.
+ */
+@Composable
+private fun ArtCtaButton(
+    @DrawableRes resId: Int,
+    aspectRatio: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        label = "art-cta-scale"
+    )
+    Image(
+        painter = painterResource(resId),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(aspectRatio)
+            .scale(scale)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = onClick
+            )
+    )
 }
 
 @Composable

@@ -63,8 +63,8 @@ fun MainTabsHost(
                     onOpenProfile = { tab = TabKind.PROFILE }
                 )
                 TabKind.WORKOUTS -> WorkoutsTabScreen(onBackToHome = { tab = TabKind.HOME })
-                TabKind.QUESTS -> QuestsTabScreen()
-                TabKind.PROGRESS -> ProgressTabScreen()
+                TabKind.QUESTS -> QuestsTabScreen(onBackToHome = { tab = TabKind.HOME })
+                TabKind.PROGRESS -> ProgressTabScreen(onBackToHome = { tab = TabKind.HOME })
                 TabKind.PROFILE -> ProfileTabScreen(
                     onReset = onReset,
                     onHardReset = onHardReset,
