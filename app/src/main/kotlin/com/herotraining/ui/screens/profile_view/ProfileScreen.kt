@@ -372,6 +372,12 @@ private fun OverviewTab(
             )
         }
 
+        // AI SMOKE TEST — verify Gemini API key + connectivity before we build on it
+        AiSmokeTestCard(
+            heroName = userState.hero?.name,
+            accent = accent
+        )
+
         // HARD RESET — wipes everything locally AND in Firestore
         var showHardResetDialog by remember { mutableStateOf(false) }
         Column(
@@ -629,6 +635,72 @@ private fun DiaryTab(
                 Spacer(Modifier.height(6.dp))
                 Text(e.text, style = TextStyle(fontSize = 13.sp, color = HeroPalette.Neutral300))
             }
+        }
+    }
+}
+
+/**
+ * Tiny AI smoke-test card in profile — proves that Gemini API key + SDK + network path all work.
+ * Will be removed once the real mentor/food/workout-gen features land on their own screens.
+ *
+ * Shows:
+ *   - current configured state (key present in BuildConfig?)
+ *   - "⚡ ПРОВЕРИТЬ" button that sends a single mentor-greeting request
+ *   - last response (or error message) below
+ */
+@Composable
+private fun AiSmokeTestCard(heroName: String?, accent: Color) {
+    val configured = com.herotraining.data.ai.GeminiClient.isConfigured
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().border(1.dp, accent.copy(alpha = 0.6f)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            "AI · GEMINI SMOKE TEST",
+            style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent)
+        )
+        Text(
+            if (configured) "Ключ подхвачен. Жми чтобы запросить приветствие ментора."
+            else "КЛЮЧ НЕ НАСТРОЕН — нужен GEMINI_API_KEY в local.properties.",
+            style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral400)
+        )
+        Text(
+            if (busy) "ЗАПРОС..." else "⚡ ПРОВЕРИТЬ",
+            style = TextStyle(
+                fontSize = 12.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold,
+                color = if (configured && !busy) accent else HeroPalette.Neutral600
+            ),
+            modifier = Modifier
+                .then(
+                    if (configured && !busy) Modifier.clickable {
+                        busy = true
+                        error = null
+                        scope.launch {
+                            com.herotraining.data.ai.GeminiClient.mentorGreeting(heroName)
+                                .onSuccess { result = it; error = null }
+                                .onFailure { error = "${it.javaClass.simpleName}: ${it.message ?: "—"}"; result = null }
+                            busy = false
+                        }
+                    } else Modifier
+                )
+                .padding(vertical = 6.dp)
+        )
+        result?.let {
+            Text(
+                text = "«$it»",
+                style = TextStyle(fontSize = 13.sp, color = Color.White, lineHeight = 18.sp)
+            )
+        }
+        error?.let {
+            Text(
+                text = "⚠ $it",
+                style = TextStyle(fontSize = 11.sp, color = HeroPalette.Red500, lineHeight = 15.sp)
+            )
         }
     }
 }
