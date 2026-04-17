@@ -118,7 +118,7 @@ fun BootSplashScreen(onReady: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = "ЗАПУСК СИСТЕМЫ v0.1",
+                text = "ЗАПУСК СИСТЕМЫ v0.1.1",
                 style = TextStyle(
                     fontFamily = ImpactLike,
                     fontWeight = FontWeight.Black,
