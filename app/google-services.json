@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "490017466168",
+    "project_id": "hero-training-app",
+    "storage_bucket": "hero-training-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:490017466168:android:b919cd84a9e23118e803cd",
+        "android_client_info": {
+          "package_name": "com.herotraining"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRigf1mvKkEngGN450xCWhjPBMu3nBS30"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

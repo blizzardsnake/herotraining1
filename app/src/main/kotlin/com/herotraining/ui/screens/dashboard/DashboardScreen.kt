@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
@@ -62,6 +63,7 @@ fun DashboardScreen(
     onBonus: () -> Unit,
     onGear: () -> Unit,
     onReset: () -> Unit,
+    onProfile: () -> Unit = {},
     vm: DashboardViewModel = viewModel()
 ) {
     val state: UserState by vm.state.collectAsStateWithLifecycle()
@@ -112,6 +114,11 @@ fun DashboardScreen(
                         style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, color = hero.color.copy(alpha = 0.7f))
                     )
                 }
+                Icon(
+                    Icons.Filled.Person, null, tint = hero.color,
+                    modifier = Modifier.size(22.dp).clickable { onProfile() }
+                )
+                Spacer(Modifier.width(14.dp))
                 Text(
                     text = "СМЕНИТЬ",
                     style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral600),

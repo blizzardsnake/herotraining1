@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.herotraining.data.db.AppDatabase
 import com.herotraining.data.health.HealthConnectManager
+import com.herotraining.data.repo.ProfileRepository
 import com.herotraining.data.repo.StateRepository
 
 class HeroApp : Application(), Configuration.Provider {
@@ -14,6 +15,9 @@ class HeroApp : Application(), Configuration.Provider {
     lateinit var stateRepository: StateRepository
         private set
 
+    lateinit var profileRepository: ProfileRepository
+        private set
+
     lateinit var healthConnect: HealthConnectManager
         private set
 
@@ -21,6 +25,7 @@ class HeroApp : Application(), Configuration.Provider {
         super.onCreate()
         database = AppDatabase.get(this)
         stateRepository = StateRepository(database)
+        profileRepository = ProfileRepository(database)
         healthConnect = HealthConnectManager(this)
         com.herotraining.work.NotificationChannels.ensureCreated(this)
         com.herotraining.work.WorkScheduler.scheduleAll(this)

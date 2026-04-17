@@ -10,6 +10,7 @@ object Destinations {
     const val BASELINE_TEST = "baseline/{heroId}"
     const val SUMMARY = "summary/{heroId}"
     const val DASHBOARD = "dashboard"
+    const val PROFILE_VIEW = "profile_view"
 
     fun heroSelect(gender: String) = "hero/$gender"
     fun heroGearForm(heroId: String) = "gear/$heroId"

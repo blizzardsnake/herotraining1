@@ -23,6 +23,7 @@ import com.herotraining.ui.screens.hero.HeroPlaceholder
 import com.herotraining.ui.screens.hero.HeroSelectScreen
 import com.herotraining.ui.screens.nutrition.NutritionFormScreen
 import com.herotraining.ui.screens.profile.ProfileFormScreen
+import com.herotraining.ui.screens.profile_view.ProfileScreen
 import com.herotraining.ui.screens.summary.OnboardingSummaryScreen
 import kotlinx.coroutines.launch
 
@@ -183,8 +184,13 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                             popUpTo(Destinations.DASHBOARD) { inclusive = true }
                         }
                     }
-                }
+                },
+                onProfile = { navController.navigate(Destinations.PROFILE_VIEW) }
             )
+        }
+
+        composable(Destinations.PROFILE_VIEW) {
+            ProfileScreen(onBack = { navController.popBackStack() })
         }
     }
 }

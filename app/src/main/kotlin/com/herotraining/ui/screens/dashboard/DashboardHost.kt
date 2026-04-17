@@ -16,7 +16,7 @@ private enum class View { MAIN, TRAINING, NUTRITION, BONUS, GEAR }
  * and one of the four detail views.
  */
 @Composable
-fun DashboardHost(onReset: () -> Unit) {
+fun DashboardHost(onReset: () -> Unit, onProfile: () -> Unit) {
     val vm: DashboardViewModel = viewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     var view by remember { mutableStateOf(View.MAIN) }
@@ -28,6 +28,7 @@ fun DashboardHost(onReset: () -> Unit) {
             onBonus = { view = View.BONUS },
             onGear = { view = View.GEAR },
             onReset = onReset,
+            onProfile = onProfile,
             vm = vm
         )
         View.TRAINING -> TrainingViewScreen(
