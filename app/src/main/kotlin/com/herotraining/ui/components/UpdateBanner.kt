@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -45,13 +46,15 @@ fun UpdateBanner(
     state: UpdateState,
     accent: Color,
     onDownload: (UpdateInfo) -> Unit,
-    onInstall: () -> Unit
+    onInstall: () -> Unit,
+    onDismiss: () -> Unit = {}
 ) {
     if (state is UpdateState.Hidden) return
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(accent.copy(alpha = 0.1f))
+            .background(Color(0xFF0A0A0A))          // opaque, not translucent — so boot terminal doesn't bleed through
+            .background(accent.copy(alpha = 0.1f))  // then accent tint on top
             .border(2.dp, accent)
             .padding(14.dp)
     ) {
@@ -60,8 +63,16 @@ fun UpdateBanner(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "ДОСТУПНО ОБНОВЛЕНИЕ",
-                style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold, color = accent)
+                style = TextStyle(fontFamily = com.herotraining.ui.theme.Rajdhani, fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold, color = accent),
+                modifier = Modifier.weight(1f)
             )
+            if (state is UpdateState.Available) {
+                Icon(
+                    Icons.Filled.Close, null, tint = HeroPalette.Neutral500,
+                    modifier = Modifier.size(14.dp)
+                        .clickable { onDismiss() }
+                )
+            }
         }
         Spacer(Modifier.height(6.dp))
         val info = when (state) {
@@ -73,13 +84,13 @@ fun UpdateBanner(
         if (info != null) {
             Text(
                 text = "Версия ${info.versionName} · ${info.apkSizeBytes / 1024 / 1024} МБ",
-                style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HeroPalette.Neutral300)
+                style = TextStyle(fontFamily = com.herotraining.ui.theme.Rajdhani, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = HeroPalette.Neutral300)
             )
             if (info.releaseNotes.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = info.releaseNotes,
-                    style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral500)
+                    text = info.releaseNotes.take(120) + if (info.releaseNotes.length > 120) "…" else "",
+                    style = TextStyle(fontFamily = com.herotraining.ui.theme.Rajdhani, fontSize = 11.sp, color = HeroPalette.Neutral500)
                 )
             }
         }
@@ -109,7 +120,7 @@ fun UpdateBanner(
             is UpdateState.Downloading -> {
                 Text(
                     text = "Загрузка... ${state.percent}%",
-                    style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, color = accent)
+                    style = TextStyle(fontFamily = com.herotraining.ui.theme.Rajdhani, fontSize = 12.sp, letterSpacing = 2.sp, color = accent)
                 )
                 Spacer(Modifier.height(4.dp))
                 Box(Modifier.fillMaxWidth().height(4.dp).background(HeroPalette.Neutral900)) {

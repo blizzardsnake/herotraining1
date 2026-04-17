@@ -27,10 +27,15 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,11 +55,13 @@ import com.herotraining.domain.calc.getCurrentRank
 import com.herotraining.domain.calc.getDecayedCombo
 import com.herotraining.domain.calc.getTodayWorkout
 import com.herotraining.ui.components.ComboBar
+import com.herotraining.ui.components.HeroBackgroundScaffold
 import com.herotraining.ui.components.QuestWindow
 import com.herotraining.ui.components.StatTile
 import com.herotraining.ui.components.UpdateBanner
 import com.herotraining.ui.theme.HeroPalette
 import com.herotraining.ui.theme.ImpactLike
+import com.herotraining.ui.theme.heroTheme
 
 @Composable
 fun DashboardScreen(
@@ -87,8 +94,10 @@ fun DashboardScreen(
     val workout = getTodayWorkout(state.programStartEpochMs, build)
     val macros = calcMacros(profile, build, hero)
     val totalKcal = state.todayMeals.sumOf { it.kcal }
+    var showResetDialog by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    val th = heroTheme()
+    HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -114,15 +123,26 @@ fun DashboardScreen(
                         style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, color = hero.color.copy(alpha = 0.7f))
                     )
                 }
-                Icon(
-                    Icons.Filled.Person, null, tint = hero.color,
-                    modifier = Modifier.size(22.dp).clickable { onProfile() }
-                )
-                Spacer(Modifier.width(14.dp))
+                // PROFILE — prominent bordered button so user can always find it
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .border(1.dp, hero.color)
+                        .clickable { onProfile() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Filled.Person, null, tint = hero.color, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "ПРОФИЛЬ",
+                        style = TextStyle(fontFamily = ImpactLike, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, color = hero.color)
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "СМЕНИТЬ",
-                    style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral600),
-                    modifier = Modifier.clickable { onReset() }
+                    text = "СМЕНИТЬ\nГЕРОЯ",
+                    style = TextStyle(fontFamily = ImpactLike, fontSize = 9.sp, letterSpacing = 1.sp, color = HeroPalette.Neutral500, lineHeight = 11.sp, fontWeight = FontWeight.Medium),
+                    modifier = Modifier.clickable { showResetDialog = true }
                 )
             }
 
@@ -132,16 +152,9 @@ fun DashboardScreen(
                     .padding(horizontal = 20.dp)
                     .padding(top = 16.dp)
                     .widthIn(max = 720.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Update banner (shown when newer release found on GitHub)
-                val updateState by vm.update.collectAsStateWithLifecycle()
-                UpdateBanner(
-                    state = updateState,
-                    accent = hero.color,
-                    onDownload = { vm.downloadUpdate(it) },
-                    onInstall = { vm.launchInstaller() }
-                )
+                // (Update banner now lives at MainActivity level so it appears on every screen)
 
                 ComboBar(combo = combo, hero = hero)
 
@@ -150,24 +163,28 @@ fun DashboardScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(2.dp, hero.color)
-                        .padding(16.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = hero.rankSystem.name,
                         style = TextStyle(fontSize = 10.sp, letterSpacing = 3.sp, color = hero.color.copy(alpha = 0.7f))
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = rank.rank,
-                            style = TextStyle(fontFamily = ImpactLike, fontSize = 56.sp, fontWeight = FontWeight.Black, color = hero.color)
+                            style = TextStyle(fontFamily = ImpactLike, fontSize = 32.sp, fontWeight = FontWeight.Black, color = hero.color),
+                            maxLines = 1,
+                            softWrap = false
                         )
                         if (rank.label != rank.rank) {
-                            Spacer(Modifier.width(10.dp))
+                            Spacer(Modifier.width(8.dp))
                             Text(
                                 text = rank.label,
-                                style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, color = hero.color),
-                                modifier = Modifier.padding(bottom = 12.dp)
+                                style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = hero.color),
+                                modifier = Modifier.padding(bottom = 6.dp),
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -316,13 +333,52 @@ fun DashboardScreen(
                 }
 
                 Spacer(Modifier.height(8.dp))
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val version = remember {
+                    runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }
+                        .getOrNull() ?: "?"
+                }
                 Text(
-                    text = "v0.8 · ПРОТОКОЛ АКТИВЕН",
+                    text = "v$version · ПРОТОКОЛ АКТИВЕН",
                     style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral700),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )
             }
         }
+    }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            containerColor = hero.bgColor,
+            icon = { Icon(Icons.Filled.Warning, null, tint = HeroPalette.Red500) },
+            title = {
+                Text(
+                    "СМЕНИТЬ ГЕРОЯ?",
+                    style = TextStyle(fontFamily = ImpactLike, fontSize = 20.sp, fontWeight = FontWeight.Black, color = HeroPalette.Red500)
+                )
+            },
+            text = {
+                Text(
+                    "Сменим героя и билд. Сбросятся: серия, монеты, комбо, питание за сегодня.\n\nОстаются нетронутыми: твоя анкета (возраст / рост / вес / опыт / травмы), замеры, вес-лог, фото и дневник.\n\nАнкету заполнять заново НЕ надо — просто выберешь нового героя.",
+                    style = TextStyle(fontSize = 13.sp, color = Color.White)
+                )
+            },
+            confirmButton = {
+                Text(
+                    "СМЕНИТЬ ГЕРОЯ →",
+                    style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, color = HeroPalette.Red500, fontWeight = FontWeight.Bold),
+                    modifier = Modifier.clickable { showResetDialog = false; onReset() }.padding(8.dp)
+                )
+            },
+            dismissButton = {
+                Text(
+                    "ОТМЕНА",
+                    style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral400),
+                    modifier = Modifier.clickable { showResetDialog = false }.padding(8.dp)
+                )
+            }
+        )
     }
 }
 

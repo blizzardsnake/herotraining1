@@ -244,11 +244,45 @@ class StateRepository(private val db: AppDatabase) {
         }
     }
 
-    suspend fun reset() {
+    /**
+     * Soft reset: clears ONLY the hero choice + today's progress. Keeps anketa data
+     * (age/sex/height/weight/experience/equipment/injuries/nutrition-prefs/baseline)
+     * intact so user doesn't have to re-fill the questionnaire.
+     * Used when tapping 'СМЕНИТЬ ГЕРОЯ' on Dashboard.
+     */
+    suspend fun resetHeroChoice() {
+        val cur = db.stateDao().get() ?: return
+        db.stateDao().upsert(
+            cur.copy(
+                heroId = null,
+                buildId = null,
+                programStartDate = null,
+                streak = 0,
+                coins = 0,
+                xp = 0,
+                rankPoints = 0,
+                combo = 0,
+                lastMealTime = null,
+                lastComboUpdate = null,
+                todayTrainingDone = false,
+                todayNutritionDone = false,
+                todayBonusDone = false,
+                lastCheckin = null
+            )
+        )
+        db.mealDao().pruneOld("")
+        db.gearDao().clear()
+    }
+
+    /** Full wipe — debug / 'factory reset'. */
+    suspend fun hardReset() {
         db.stateDao().clear()
         db.mealDao().pruneOld("")
         db.gearDao().clear()
     }
+
+    // Legacy alias — old call sites keep compiling.
+    suspend fun reset() = hardReset()
 }
 
 enum class QuestType { TRAINING, NUTRITION, BONUS }

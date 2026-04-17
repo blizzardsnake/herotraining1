@@ -36,6 +36,11 @@ class OnboardingViewModel : ViewModel() {
     fun setBaseline(baseline: Baseline) {
         _draft.value = _draft.value.copy(baseline = baseline)
     }
+
+    /** Clears the in-memory draft — used after 'СМЕНИТЬ ГЕРОЯ' so the next hero flow starts blank. */
+    fun clearDraft() {
+        _draft.value = OnboardingDraft()
+    }
 }
 
 data class OnboardingDraft(

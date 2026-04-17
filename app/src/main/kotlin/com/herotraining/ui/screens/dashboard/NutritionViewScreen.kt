@@ -76,7 +76,7 @@ fun NutritionViewScreen(
     var selectedMealType by remember { mutableStateOf("breakfast") }
     var portionModalFor by remember { mutableStateOf<String?>(null) }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

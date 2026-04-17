@@ -31,6 +31,7 @@ class HeroApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        com.herotraining.crash.CrashHandler.install(this)
         database = AppDatabase.get(this)
         stateRepository = StateRepository(database)
         profileRepository = ProfileRepository(database)

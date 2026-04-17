@@ -30,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +66,8 @@ private enum class Tab(val label: String) {
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
+    onHardReset: () -> Unit = {},
+    onSignOut: () -> Unit = {},
     vm: ProfileViewModel = viewModel()
 ) {
     val userState by vm.userState.collectAsStateWithLifecycle()
@@ -86,7 +90,7 @@ fun ProfileScreen(
         uri?.let { vm.addPhoto(it.toString(), pose = null, note = null) }
     }
 
-    Box(Modifier.fillMaxSize().background(bg)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             Modifier.fillMaxSize()
                 .verticalScroll(rememberScrollState())
@@ -154,7 +158,10 @@ fun ProfileScreen(
             when (tab) {
                 Tab.OVERVIEW -> OverviewTab(
                     measurements = measurements, weights = weights, photos = photos, diary = diary,
-                    accent = accent
+                    accent = accent, userState = userState,
+                    onClearCrash = { /* recomposed on next nav */ },
+                    onHardReset = onHardReset,
+                    onSignOut = onSignOut
                 )
                 Tab.MEASUREMENTS -> MeasurementsTab(
                     list = measurements, accent = accent,
@@ -235,8 +242,16 @@ private fun OverviewTab(
     weights: List<WeightEntryEntity>,
     photos: List<ProgressPhotoEntity>,
     diary: List<DiaryEntryEntity>,
-    accent: Color
+    accent: Color,
+    userState: com.herotraining.data.model.UserState,
+    onClearCrash: () -> Unit,
+    onHardReset: () -> Unit = {},
+    onSignOut: () -> Unit = {}
 ) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val lastCrash = remember { com.herotraining.crash.CrashHandler.readLastCrash(ctx) }
+    var crashVisible by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val latestWeight = weights.firstOrNull()
         val firstWeight = weights.lastOrNull()
@@ -256,6 +271,218 @@ private fun OverviewTab(
             MiniStat("ФОТО", photos.size.toString(), accent, Modifier.weight(1f))
             MiniStat("ЗАПИСИ", diary.size.toString(), accent, Modifier.weight(1f))
         }
+
+        // Base parameters from anketa — read-only snapshot
+        userState.profile?.let { p ->
+            Column(
+                modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral800).padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "БАЗОВЫЕ ПАРАМЕТРЫ · BASELINE PROFILE",
+                    style = TextStyle(fontSize = 9.sp, letterSpacing = 2.sp, color = accent, fontWeight = FontWeight.Bold)
+                )
+                ParamRow("ПОЛ", if (p.sex.key == "male") "Мужской" else "Женский")
+                ParamRow("ВОЗРАСТ", "${p.age} лет")
+                ParamRow("РОСТ", "${p.height} см")
+                ParamRow("ВЕС (анкета)", "${p.weight} кг")
+                ParamRow("ОПЫТ", p.experience.label)
+                ParamRow("МЕСТО", p.equipment.label)
+                ParamRow("СЕССИЯ", "${p.timePerSessionMinutes} мин")
+                ParamRow("ТРАВМЫ", p.injuries.joinToString(", ") { it.label })
+                Text(
+                    text = "Редактирование в следующем релизе — пока вес/замеры обновляй через вкладки выше.",
+                    style = TextStyle(fontSize = 10.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = HeroPalette.Neutral500),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Google account card
+        val heroApp = ctx.applicationContext as com.herotraining.HeroApp
+        val scope = rememberCoroutineScope()
+        val auth = heroApp.authRepository.status.collectAsStateWithLifecycle().value
+        var showSignOutDialog by remember { mutableStateOf(false) }
+        Column(
+            modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral800).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                "GOOGLE-АККАУНТ",
+                style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent)
+            )
+            val signedInState = auth as? com.herotraining.data.auth.AuthStatus.SignedIn
+            if (signedInState != null) {
+                Text(
+                    signedInState.email ?: signedInState.name ?: "UID: ${signedInState.uid}",
+                    style = TextStyle(fontSize = 12.sp, color = HeroPalette.Neutral300)
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "↪ ВЫЙТИ ИЗ АККАУНТА",
+                    style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent),
+                    modifier = Modifier.clickable { showSignOutDialog = true }.padding(vertical = 6.dp)
+                )
+            } else {
+                Text(
+                    "Вход не выполнен. Прогресс сохраняется только локально.",
+                    style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral500)
+                )
+            }
+        }
+        if (showSignOutDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showSignOutDialog = false },
+                title = { Text("ВЫЙТИ ИЗ GOOGLE?", style = TextStyle(fontWeight = FontWeight.Bold, color = accent)) },
+                text = {
+                    Text(
+                        "Облачные данные сохранятся в Google — при следующем входе этим же аккаунтом всё восстановится. Локальный кэш будет очищен, чтобы другой человек мог войти своим аккаунтом без пересечений.",
+                        style = TextStyle(fontSize = 12.sp, color = Color.White, lineHeight = 16.sp)
+                    )
+                },
+                confirmButton = {
+                    Text("ВЫЙТИ",
+                        style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, color = accent, fontWeight = FontWeight.Bold),
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                try { heroApp.authRepository.signOut() } catch (_: Throwable) {}
+                                // Clear local state so the next user (or reinstall) starts fresh.
+                                // Cloud doc is preserved — signing back into the same account
+                                // will restore everything via FirestoreSync.pullAll on SignIn.
+                                heroApp.stateRepository.hardReset()
+                                showSignOutDialog = false
+                                onSignOut()
+                            }
+                        }.padding(8.dp)
+                    )
+                },
+                dismissButton = {
+                    Text("ОТМЕНА",
+                        style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral400),
+                        modifier = Modifier.clickable { showSignOutDialog = false }.padding(8.dp)
+                    )
+                }
+            )
+        }
+
+        // HARD RESET — wipes everything locally AND in Firestore
+        var showHardResetDialog by remember { mutableStateOf(false) }
+        Column(
+            modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Red900).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                "ОПАСНАЯ ЗОНА · DANGER ZONE",
+                style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = HeroPalette.Red500)
+            )
+            Text(
+                "Удалит ВСЁ — и локально, и в облаке. Нельзя откатить.",
+                style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral400)
+            )
+            Text(
+                "🗑 ПОЛНЫЙ СБРОС",
+                style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = HeroPalette.Red500),
+                modifier = Modifier.clickable { showHardResetDialog = true }.padding(vertical = 8.dp)
+            )
+        }
+        if (showHardResetDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showHardResetDialog = false },
+                title = { Text("УДАЛИТЬ ВСЕ ДАННЫЕ?", style = TextStyle(fontWeight = FontWeight.Bold, color = HeroPalette.Red500)) },
+                text = {
+                    Text(
+                        "Будет стёрто (локально И в облаке Google):\n• Анкета (возраст / рост / вес / пол / опыт / травмы)\n• Стиль питания и предпочтения\n• Baseline-тест\n• Замеры тела и вес-лог\n• Прогресс-фото и дневник\n• Герой, билд, серия, монеты, достижения\n\nЭто НЕЛЬЗЯ откатить.",
+                        style = TextStyle(fontSize = 12.sp, color = Color.White, lineHeight = 16.sp)
+                    )
+                },
+                confirmButton = {
+                    Text(
+                        "УДАЛИТЬ ВСЁ",
+                        style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, color = HeroPalette.Red500, fontWeight = FontWeight.Bold),
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                val status = heroApp.authRepository.status.value
+                                if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
+                                    heroApp.firestoreSync.deleteUserDoc(status.uid)
+                                }
+                                heroApp.stateRepository.hardReset()
+                                showHardResetDialog = false
+                                onHardReset()
+                            }
+                        }.padding(8.dp)
+                    )
+                },
+                dismissButton = {
+                    Text(
+                        "ОТМЕНА",
+                        style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral400),
+                        modifier = Modifier.clickable { showHardResetDialog = false }.padding(8.dp)
+                    )
+                }
+            )
+        }
+
+        // Crash log access (moved from SignIn since SignIn may not show anymore)
+        if (lastCrash != null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Red500).padding(12.dp)
+            ) {
+                Text(
+                    "⚠ ЗАФИКСИРОВАНА ОШИБКА",
+                    style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = HeroPalette.Red500)
+                )
+                Spacer(Modifier.height(6.dp))
+                Row {
+                    Text(
+                        "ПОКАЗАТЬ",
+                        style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, color = HeroPalette.Red500, fontWeight = FontWeight.Bold),
+                        modifier = Modifier.clickable { crashVisible = true }.padding(end = 20.dp)
+                    )
+                    Text(
+                        "ОЧИСТИТЬ",
+                        style = TextStyle(fontSize = 11.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral400),
+                        modifier = Modifier.clickable {
+                            com.herotraining.crash.CrashHandler.clearLastCrash(ctx)
+                            onClearCrash()
+                        }
+                    )
+                }
+            }
+            if (crashVisible) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { crashVisible = false },
+                    title = { Text("CRASH LOG", style = TextStyle(color = HeroPalette.Red500, fontWeight = FontWeight.Bold)) },
+                    text = {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            Text(
+                                text = lastCrash.take(4000),
+                                style = TextStyle(fontSize = 10.sp, color = HeroPalette.Neutral300, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Text("ЗАКРЫТЬ",
+                            style = TextStyle(color = HeroPalette.Neutral400),
+                            modifier = Modifier.clickable { crashVisible = false }.padding(8.dp))
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParamRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 11.sp, letterSpacing = 1.sp, color = HeroPalette.Neutral500),
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = TextStyle(fontSize = 12.sp, color = HeroPalette.Neutral300, fontWeight = FontWeight.Bold)
+        )
     }
 }
 

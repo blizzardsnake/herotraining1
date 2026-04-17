@@ -64,7 +64,7 @@ fun TrainingViewScreen(state: UserState, onBack: () -> Unit, onComplete: () -> U
         }
     }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

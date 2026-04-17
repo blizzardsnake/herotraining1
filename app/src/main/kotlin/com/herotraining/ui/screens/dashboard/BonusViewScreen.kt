@@ -35,7 +35,7 @@ import com.herotraining.ui.theme.ImpactLike
 @Composable
 fun BonusViewScreen(state: UserState, onBack: () -> Unit, onComplete: () -> Unit) {
     val hero = state.hero ?: return
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

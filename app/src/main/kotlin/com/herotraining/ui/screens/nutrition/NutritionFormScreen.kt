@@ -36,6 +36,7 @@ import com.herotraining.data.model.Hero
 import com.herotraining.data.model.NutritionGoal
 import com.herotraining.data.model.NutritionProfile
 import com.herotraining.data.model.TreatKind
+import com.herotraining.ui.components.HeroBackgroundScaffold
 import com.herotraining.ui.components.PrimaryOutlinedButton
 import com.herotraining.ui.components.SelectButton
 import com.herotraining.ui.components.StepProgress
@@ -89,7 +90,7 @@ fun NutritionFormScreen(
     }
     val prev = { if (step == 0) onBack() else step -= 1 }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

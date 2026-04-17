@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.herotraining.data.model.Hero
 import com.herotraining.data.model.HeroBuild
 import com.herotraining.data.model.visibleBuilds
+import com.herotraining.ui.components.HeroBackgroundScaffold
 import com.herotraining.ui.theme.HeroPalette
 import com.herotraining.ui.theme.ImpactLike
 
@@ -55,11 +56,7 @@ fun BuildSelectScreen(
     val builds = hero.visibleBuilds(age)
     val has45 = builds.any { it.hiddenFor45 }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(hero.bgColor)
-    ) {
+    HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

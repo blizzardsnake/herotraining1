@@ -94,7 +94,7 @@ fun BaselineTestScreen(
         if (step == 0) { step = -1 } else { step -= 1; cur = ""; scaleValue = null }
     }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -225,7 +225,7 @@ fun BaselineTestScreen(
 
 @Composable
 private fun Intro(hero: Hero, names: List<String>, onBack: () -> Unit, onStart: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

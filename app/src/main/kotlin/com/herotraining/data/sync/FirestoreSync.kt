@@ -44,6 +44,11 @@ class FirestoreSync(private val db: AppDatabase) {
         fs.collection("users").document(uid).set(doc).await()
     }
 
+    /** Hard-delete the user's cloud document so a full reset actually wipes cloud too. */
+    suspend fun deleteUserDoc(uid: String) {
+        runCatching { fs.collection("users").document(uid).delete().await() }
+    }
+
     /** Pull from Firestore and replace local data (for reinstalls / new device sign-in). */
     suspend fun pullAll(uid: String): Boolean {
         val snapshot = fs.collection("users").document(uid).get().await()

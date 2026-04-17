@@ -49,7 +49,7 @@ fun GearViewScreen(state: UserState, onBack: () -> Unit, onSave: (Set<String>) -
         selected = if (selected.contains(id)) selected - id else selected + id
     }
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

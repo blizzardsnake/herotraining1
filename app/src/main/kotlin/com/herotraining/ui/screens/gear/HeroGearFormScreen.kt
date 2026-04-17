@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.herotraining.data.catalog.HeroGearCatalog
 import com.herotraining.data.model.Hero
 import com.herotraining.data.model.HeroGear
+import com.herotraining.ui.components.HeroBackgroundScaffold
 import com.herotraining.ui.components.PrimaryOutlinedButton
 import com.herotraining.ui.theme.HeroPalette
 import com.herotraining.ui.theme.ImpactLike
@@ -55,11 +56,7 @@ fun HeroGearFormScreen(
         selected = if (selected.contains(id)) selected - id else selected + id
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(hero.bgColor)
-    ) {
+    HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()

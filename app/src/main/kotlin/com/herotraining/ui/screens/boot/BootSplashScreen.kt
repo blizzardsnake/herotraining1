@@ -26,6 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -88,6 +90,11 @@ fun BootSplashScreen(onReady: () -> Unit) {
         label = "bootProgress"
     )
 
+    val ctx = LocalContext.current
+    val versionName = remember {
+        runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: "?"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -96,8 +103,9 @@ fun BootSplashScreen(onReady: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(horizontal = 20.dp)
-                .padding(top = 40.dp, bottom = 40.dp)
+                .padding(top = 20.dp, bottom = 40.dp)
         ) {
             // Header badge
             Box(
@@ -118,7 +126,7 @@ fun BootSplashScreen(onReady: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = "ЗАПУСК СИСТЕМЫ v0.2.0",
+                text = "ЗАПУСК СИСТЕМЫ v$versionName",
                 style = TextStyle(
                     fontFamily = ImpactLike,
                     fontWeight = FontWeight.Black,

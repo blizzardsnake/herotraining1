@@ -13,3 +13,7 @@ local.properties
 *.apk
 *.aab
 *.keystore
+
+# AI-generated source mockups live locally — we commit only the sliced WebP pieces
+# that ship with the app (see app/src/main/res/drawable-nodpi/).
+/mockups/

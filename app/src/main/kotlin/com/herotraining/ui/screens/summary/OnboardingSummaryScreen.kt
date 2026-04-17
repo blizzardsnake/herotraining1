@@ -54,7 +54,7 @@ fun OnboardingSummaryScreen(
     val unlockedGear = HeroGearCatalog.forHero(hero.id).filter { it.id in gear }
     val startsToday = LocalTime.now().hour < 10
 
-    Box(Modifier.fillMaxSize().background(hero.bgColor)) {
+    com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()
