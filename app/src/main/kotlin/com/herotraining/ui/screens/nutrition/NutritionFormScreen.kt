@@ -30,9 +30,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.herotraining.data.model.Exclusion
 import com.herotraining.data.model.FoodStyle
-import com.herotraining.data.model.Hero
 import com.herotraining.data.model.NutritionGoal
 import com.herotraining.data.model.NutritionProfile
 import com.herotraining.data.model.TreatKind
@@ -45,9 +45,9 @@ import com.herotraining.ui.theme.ImpactLike
 
 @Composable
 fun NutritionFormScreen(
-    hero: Hero,
     onBack: () -> Unit,
-    onComplete: (NutritionProfile) -> Unit
+    onComplete: (NutritionProfile) -> Unit,
+    accentColor: Color = HeroPalette.Red500
 ) {
     var step by remember { mutableStateOf(0) }
 
@@ -105,7 +105,7 @@ fun NutritionFormScreen(
                 modifier = Modifier.clickable { prev() }.padding(vertical = 8.dp)
             )
             Spacer(Modifier.height(16.dp))
-            StepProgress(current = step, total = stepTitles.size, activeColor = hero.color)
+            StepProgress(current = step, total = stepTitles.size, activeColor = accentColor)
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Restaurant, contentDescription = null, tint = HeroPalette.Neutral500, modifier = Modifier.size(12.dp))
@@ -122,7 +122,7 @@ fun NutritionFormScreen(
                     fontFamily = ImpactLike,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Black,
-                    color = hero.color
+                    color = accentColor
                 )
             )
             stepTitles[step].second?.let { subtitle ->
@@ -134,7 +134,7 @@ fun NutritionFormScreen(
             when (step) {
                 0 -> SingleSelect(
                     options = FoodStyle.entries.map { it to it.label },
-                    selected = style, onSelect = { style = it }, color = hero.color
+                    selected = style, onSelect = { style = it }, color = accentColor
                 )
                 1 -> MultiSelect(
                     options = Exclusion.entries.map { it to it.label },
@@ -147,15 +147,15 @@ fun NutritionFormScreen(
                             if (without.contains(v)) without - v else without + v
                         }
                     },
-                    color = hero.color
+                    color = accentColor
                 )
                 2 -> SingleSelect(
                     options = NutritionGoal.entries.map { it to it.label },
-                    selected = goal, onSelect = { goal = it }, color = hero.color
+                    selected = goal, onSelect = { goal = it }, color = accentColor
                 )
                 3 -> SingleSelect(
                     options = listOf(2 to "2 (IF)", 3 to "3", 4 to "4", 5 to "5"),
-                    selected = mealsPerDay, onSelect = { mealsPerDay = it }, color = hero.color
+                    selected = mealsPerDay, onSelect = { mealsPerDay = it }, color = accentColor
                 )
                 4 -> MultiSelect(
                     options = TreatKind.entries.map { it to it.label },
@@ -168,14 +168,14 @@ fun NutritionFormScreen(
                             if (without.contains(v)) without - v else without + v
                         }
                     },
-                    color = hero.color
+                    color = accentColor
                 )
             }
 
             Spacer(Modifier.height(24.dp))
             PrimaryOutlinedButton(
                 text = if (isLast) "К ТЕСТУ →" else "ДАЛЕЕ →",
-                accentColor = hero.color,
+                accentColor = accentColor,
                 onClick = next,
                 enabled = canProceed
             )

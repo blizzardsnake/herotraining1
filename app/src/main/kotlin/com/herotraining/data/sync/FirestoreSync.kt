@@ -155,12 +155,14 @@ class FirestoreSync(private val db: AppDatabase) {
 
     private fun stateToMap(s: UserStateEntity): Map<String, Any?> = mapOf(
         "onboarded" to s.onboarded,
+        "disclaimerAcceptedAt" to s.disclaimerAcceptedAt,
         "heroId" to s.heroId, "buildId" to s.buildId,
         "age" to s.age, "weight" to s.weight, "height" to s.height, "sex" to s.sex,
         "experience" to s.experience, "equipment" to s.equipment, "timePerSession" to s.timePerSession,
         "injuries" to s.injuries,
         "foodStyle" to s.foodStyle, "exclusions" to s.exclusions, "goal" to s.goal,
         "mealsPerDay" to s.mealsPerDay, "keepTreats" to s.keepTreats,
+        "baselineTakenAt" to s.baselineTakenAt,
         "basePushups" to s.basePushups, "baseSquats" to s.baseSquats,
         "basePlankSec" to s.basePlankSec, "basePullups" to s.basePullups,
         "baseBurpees" to s.baseBurpees, "baseCardioMinutes" to s.baseCardioMinutes,
@@ -177,6 +179,7 @@ class FirestoreSync(private val db: AppDatabase) {
     private fun mapToState(m: Map<String, Any?>): UserStateEntity = UserStateEntity(
         id = 0,
         onboarded = m["onboarded"] as? Boolean ?: false,
+        disclaimerAcceptedAt = (m["disclaimerAcceptedAt"] as? Number)?.toLong(),
         heroId = m["heroId"] as? String,
         buildId = m["buildId"] as? String,
         age = (m["age"] as? Number)?.toInt(),
@@ -192,6 +195,7 @@ class FirestoreSync(private val db: AppDatabase) {
         goal = m["goal"] as? String,
         mealsPerDay = (m["mealsPerDay"] as? Number)?.toInt(),
         keepTreats = m["keepTreats"] as? String ?: "",
+        baselineTakenAt = (m["baselineTakenAt"] as? Number)?.toLong(),
         basePushups = (m["basePushups"] as? Number)?.toInt() ?: 0,
         baseSquats = (m["baseSquats"] as? Number)?.toInt() ?: 0,
         basePlankSec = (m["basePlankSec"] as? Number)?.toInt() ?: 0,

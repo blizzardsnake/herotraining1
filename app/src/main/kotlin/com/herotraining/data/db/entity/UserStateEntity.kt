@@ -20,6 +20,10 @@ data class UserStateEntity(
     val heroId: String? = null,
     val buildId: String? = null,
 
+    // Когда юзер принял дисклеймер — null если ещё не принял.
+    // Хранится как epoch-ms чтобы было видно КОГДА согласился (аудит).
+    val disclaimerAcceptedAt: Long? = null,
+
     // Profile
     val age: Int? = null,
     val weight: Int? = null,
@@ -38,6 +42,9 @@ data class UserStateEntity(
     val keepTreats: String = "",
 
     // Baseline
+    // baselineTakenAt = null значит юзер ещё не прошёл тест. null != "0 результатов везде"
+    // (можно честно принять анкету и пропустить все упражнения — тогда takenAt заполнен, значения = 0)
+    val baselineTakenAt: Long? = null,
     val basePushups: Int = 0,
     val baseSquats: Int = 0,
     val basePlankSec: Int = 0,

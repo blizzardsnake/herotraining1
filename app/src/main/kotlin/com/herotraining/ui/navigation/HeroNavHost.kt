@@ -17,7 +17,7 @@ import com.herotraining.data.model.Gender
 import com.herotraining.ui.screens.baseline.BaselineTestScreen
 import com.herotraining.ui.screens.boot.BootSplashScreen
 import com.herotraining.ui.screens.build.BuildSelectScreen
-import com.herotraining.ui.screens.dashboard.DashboardHost
+import com.herotraining.ui.screens.disclaimer.DisclaimerScreen
 import com.herotraining.ui.tabs.MainTabsHost
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
@@ -31,23 +31,29 @@ import com.herotraining.ui.theme.ProvideHeroTheme
 import kotlinx.coroutines.launch
 
 /**
- * Single routing predicate used everywhere — guarantees consistent behaviour for:
- *   - Boot → signed-in user with full state
- *   - SignIn success → where to go based on what was pulled from cloud
- *   - "Сменить героя" → back to HeroSelect, NOT anketa
+ * Single routing predicate — used by BOOT, SignIn success, and any nav refresh.
+ *
+ * NEW ORDER (per user's product vision):
+ *   SignIn → Disclaimer → Profile → Nutrition → Baseline → HeroSelect → Gear → Build → Tomorrow → Dashboard
+ *
+ * Baseline + Nutrition now happen BEFORE hero select (they're hero-agnostic data).
+ * Disclaimer gate keeps personal questions behind explicit consent.
  */
 internal fun routeForState(
     state: com.herotraining.data.model.UserState,
     signedIn: Boolean
 ): String {
-    val profile = state.profile
-    val hero = state.hero
-    val build = state.build
     return when {
-        profile != null && hero != null && build != null -> Destinations.DASHBOARD
-        profile != null -> Destinations.heroSelect(profile.sex.key)   // anketa done, pick hero
-        signedIn -> Destinations.PROFILE_INTAKE                        // signed in, no profile yet
-        else -> Destinations.SIGN_IN                                   // cold start
+        !signedIn -> Destinations.SIGN_IN
+        !state.disclaimerAccepted -> Destinations.DISCLAIMER
+        state.profile == null -> Destinations.PROFILE_INTAKE
+        state.nutrition == null -> Destinations.NUTRITION_INTAKE
+        state.baseline == null -> Destinations.BASELINE_INTAKE
+        state.hero == null -> Destinations.heroSelect(state.profile.sex.key)
+        state.build == null -> Destinations.buildSelect(state.hero.id)
+        // onboarded = true OR hero+build set — go to Dashboard. Tomorrow-lock is handled
+        // inside Dashboard/HomeTab by checking programStartDate vs. now.
+        else -> Destinations.DASHBOARD
     }
 }
 
@@ -64,7 +70,6 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             BootSplashScreen(onReady = {
                 scope.launch {
                     val signedIn = app.authRepository.status.value is com.herotraining.data.auth.AuthStatus.SignedIn
-                    // If signed in, pull latest cloud state first
                     if (signedIn) {
                         val uid = (app.authRepository.status.value as com.herotraining.data.auth.AuthStatus.SignedIn).uid
                         runCatching { app.firestoreSync.pullAll(uid) }
@@ -82,7 +87,6 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             SignInScreen(
                 onSignedIn = {
                     scope.launch {
-                        // pullAll already ran inside SignInScreen handleSignInResult
                         val state = app.stateRepository.snapshot()
                         val dst = routeForState(state, signedIn = true)
                         navController.navigate(dst) {
@@ -91,20 +95,75 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                     }
                 },
                 onSkip = {
-                    navController.navigate(Destinations.PROFILE_INTAKE) {
+                    // Even skipping sign-in must first clear the disclaimer gate.
+                    navController.navigate(Destinations.DISCLAIMER) {
                         popUpTo(Destinations.SIGN_IN) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Anketa entry point — age, height, weight, sex, BMI + rest of profile steps
+        composable(Destinations.DISCLAIMER) {
+            DisclaimerScreen(
+                onAccepted = {
+                    scope.launch {
+                        app.stateRepository.acceptDisclaimer()
+                        // Push state to cloud if signed in
+                        val status = app.authRepository.status.value
+                        if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
+                            runCatching { app.firestoreSync.pushAll(status.uid) }
+                        }
+                        navController.navigate(Destinations.PROFILE_INTAKE) {
+                            popUpTo(Destinations.DISCLAIMER) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // Anketa — age, height, weight, sex, BMI, experience, equipment, injuries
         composable(Destinations.PROFILE_INTAKE) {
             ProfileFormScreen(
-                onBack = { /* first real screen — nothing behind */ },
+                onBack = { /* disclaimer is behind — don't bounce back there */ },
                 onComplete = { profile ->
                     onboardingVm.setProfile(profile)
-                    navController.navigate(Destinations.heroSelect(profile.sex.key))
+                    scope.launch {
+                        app.stateRepository.saveProfile(profile)
+                        navController.navigate(Destinations.NUTRITION_INTAKE)
+                    }
+                }
+            )
+        }
+
+        // Food preferences — hero-agnostic, uses default accent
+        composable(Destinations.NUTRITION_INTAKE) {
+            NutritionFormScreen(
+                onBack = { navController.popBackStack() },
+                onComplete = { n ->
+                    onboardingVm.setNutrition(n)
+                    scope.launch {
+                        app.stateRepository.saveNutrition(n)
+                        navController.navigate(Destinations.BASELINE_INTAKE)
+                    }
+                }
+            )
+        }
+
+        // Baseline test — sensory read of current level, skippable exercises
+        composable(Destinations.BASELINE_INTAKE) {
+            val draft by onboardingVm.draft.collectAsState()
+            val injuries = draft.profile?.injuries.orEmpty()
+            BaselineTestScreen(
+                injuries = injuries,
+                onBack = { navController.popBackStack() },
+                onComplete = { b ->
+                    onboardingVm.setBaseline(b)
+                    scope.launch {
+                        app.stateRepository.saveBaseline(b)
+                        val state = app.stateRepository.snapshot()
+                        val sex = state.profile?.sex?.key ?: Gender.MALE.key
+                        navController.navigate(Destinations.heroSelect(sex))
+                    }
                 }
             )
         }
@@ -155,70 +214,18 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                     onBack = { navController.popBackStack() },
                     onSelect = { b ->
                         onboardingVm.setBuild(b)
-                        // Nutrition + Baseline are filled ONCE per user and frozen.
-                        // If already present in saved state, skip straight to Summary.
-                        scope.launch {
-                            val state = app.stateRepository.snapshot()
-                            val dst = when {
-                                state.nutrition != null && state.baseline != null -> Destinations.summary(heroId)
-                                state.nutrition != null -> Destinations.baselineTest(heroId)
-                                else -> Destinations.nutritionForm(heroId)
-                            }
-                            navController.navigate(dst)
-                        }
+                        // By the time we're here we already have profile/nutrition/baseline saved.
+                        // Jump straight to the Tomorrow checkpoint.
+                        navController.navigate(Destinations.tomorrow(heroId))
                     }
                 )
             }
         }
 
+        // TOMORROW — "Тест зачтён. Первая миссия завтра в 10:00."
+        // Reuses existing OnboardingSummaryScreen which renders the recap + "НАЧАТЬ →".
         composable(
-            route = Destinations.NUTRITION_FORM,
-            arguments = listOf(navArgument("heroId") { type = NavType.StringType })
-        ) { bs ->
-            val heroId = bs.arguments?.getString("heroId").orEmpty()
-            val hero = HeroCatalog.byId(heroId)
-            if (hero == null) HeroPlaceholder(heroId) { navController.popBackStack() }
-            else ProvideHeroTheme(heroId) {
-                NutritionFormScreen(
-                    hero = hero,
-                    onBack = { navController.popBackStack() },
-                    onComplete = { n ->
-                        onboardingVm.setNutrition(n)
-                        // If baseline already taken (test frozen), skip to Summary
-                        scope.launch {
-                            val state = app.stateRepository.snapshot()
-                            val dst = if (state.baseline != null) Destinations.summary(heroId)
-                                     else Destinations.baselineTest(heroId)
-                            navController.navigate(dst)
-                        }
-                    }
-                )
-            }
-        }
-
-        composable(
-            route = Destinations.BASELINE_TEST,
-            arguments = listOf(navArgument("heroId") { type = NavType.StringType })
-        ) { bs ->
-            val heroId = bs.arguments?.getString("heroId").orEmpty()
-            val hero = HeroCatalog.byId(heroId)
-            val draft by onboardingVm.draft.collectAsState()
-            val injuries = draft.profile?.injuries.orEmpty()
-            if (hero == null) HeroPlaceholder(heroId) { navController.popBackStack() }
-            else ProvideHeroTheme(heroId) {
-                BaselineTestScreen(
-                    hero = hero, injuries = injuries,
-                    onBack = { navController.popBackStack() },
-                    onComplete = { b ->
-                        onboardingVm.setBaseline(b)
-                        navController.navigate(Destinations.summary(heroId))
-                    }
-                )
-            }
-        }
-
-        composable(
-            route = Destinations.SUMMARY,
+            route = Destinations.TOMORROW,
             arguments = listOf(navArgument("heroId") { type = NavType.StringType })
         ) { bs ->
             val heroId = bs.arguments?.getString("heroId").orEmpty()
@@ -226,13 +233,12 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
             val draft by onboardingVm.draft.collectAsState()
             val state by app.stateRepository.observeState()
                 .collectAsState(initial = com.herotraining.data.model.DEFAULT_USER_STATE)
-            // Prefer draft (just-picked values) but fall back to frozen state so skipped screens don't block Summary
             val profile = draft.profile ?: state.profile
             val build = draft.build
             val nutrition = draft.nutrition ?: state.nutrition
             val baseline = draft.baseline ?: state.baseline
             if (hero == null || profile == null || build == null || nutrition == null || baseline == null) {
-                HeroPlaceholder("${hero?.name ?: heroId} / Сводка") { navController.popBackStack() }
+                HeroPlaceholder("${hero?.name ?: heroId} / ЗАВТРА") { navController.popBackStack() }
             } else ProvideHeroTheme(heroId) {
                 OnboardingSummaryScreen(
                     hero = hero, build = build, profile = profile, gear = draft.gear,
@@ -243,7 +249,6 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                                 profile = profile, nutrition = nutrition,
                                 baseline = baseline, gear = draft.gear
                             )
-                            // Push to cloud if signed in
                             val status = app.authRepository.status.value
                             if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
                                 runCatching { app.firestoreSync.pushAll(status.uid) }
@@ -278,19 +283,12 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                         }
                     },
                     onHardReset = {
-                        // Full wipe (local + cloud) already happened in ProfileScreen.
-                        // Now: clear onboarding draft and bounce back to BOOT so routing decides
-                        // whether to show SignIn (if signed out) or ProfileIntake (if still signed in).
                         onboardingVm.clearDraft()
                         navController.navigate(Destinations.BOOT) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
                     },
                     onSignOut = {
-                        // Sign-out preserves local state (user can re-login and keep progress).
-                        // But route directly to SIGN_IN so the user can pick a different account
-                        // — bypassing routeForState which would route back to DASHBOARD if state
-                        // still has profile+hero+build.
                         navController.navigate(Destinations.SIGN_IN) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }

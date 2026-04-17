@@ -84,18 +84,21 @@ class StateRepository(private val db: AppDatabase) {
             )
         } else null
 
-        val baseline = Baseline(
-            pushups = state.basePushups,
-            squats = state.baseSquats,
-            plankSec = state.basePlankSec,
-            pullups = state.basePullups,
-            burpees = state.baseBurpees,
-            cardioMinutes = state.baseCardioMinutes,
-            flexibilityScale = state.baseFlexibility
-        )
+        val baseline = if (state.baselineTakenAt != null) {
+            Baseline(
+                pushups = state.basePushups,
+                squats = state.baseSquats,
+                plankSec = state.basePlankSec,
+                pullups = state.basePullups,
+                burpees = state.baseBurpees,
+                cardioMinutes = state.baseCardioMinutes,
+                flexibilityScale = state.baseFlexibility
+            )
+        } else null
 
         return UserState(
             onboarded = state.onboarded,
+            disclaimerAccepted = state.disclaimerAcceptedAt != null,
             hero = hero, build = build, profile = profile,
             nutrition = nutrition, baseline = baseline,
             gear = gear.toSet(),
@@ -116,13 +119,75 @@ class StateRepository(private val db: AppDatabase) {
         )
     }
 
+    /**
+     * User ticked the disclaimer checkbox — record epoch-ms.
+     * If nothing else exists yet (fresh install), creates the singleton row.
+     */
+    suspend fun acceptDisclaimer() {
+        val now = System.currentTimeMillis()
+        val existing = db.stateDao().get()
+        db.stateDao().upsert(
+            (existing ?: UserStateEntity()).copy(disclaimerAcceptedAt = now)
+        )
+    }
+
+    /** Save Profile after the anketa — may happen before hero is picked. */
+    suspend fun saveProfile(profile: Profile) {
+        val existing = db.stateDao().get() ?: UserStateEntity()
+        db.stateDao().upsert(
+            existing.copy(
+                age = profile.age, weight = profile.weight, height = profile.height,
+                sex = profile.sex.key,
+                experience = profile.experience.key,
+                equipment = profile.equipment.key,
+                timePerSession = profile.timePerSessionMinutes,
+                injuries = profile.injuries.joinToString(",") { it.key }
+            )
+        )
+    }
+
+    /** Save Nutrition after the NutritionForm — happens before hero is picked. */
+    suspend fun saveNutrition(nutrition: NutritionProfile) {
+        val existing = db.stateDao().get() ?: UserStateEntity()
+        db.stateDao().upsert(
+            existing.copy(
+                foodStyle = nutrition.style.key,
+                exclusions = nutrition.exclusions.joinToString(",") { it.key },
+                goal = nutrition.goal.key,
+                mealsPerDay = nutrition.mealsPerDay,
+                keepTreats = nutrition.keepTreats.joinToString(",") { it.key }
+            )
+        )
+    }
+
+    /**
+     * Save Baseline after the BaselineTest. baselineTakenAt marks "went through the flow"
+     * (including cases where user skipped every exercise — that's honest data too).
+     */
+    suspend fun saveBaseline(baseline: Baseline) {
+        val existing = db.stateDao().get() ?: UserStateEntity()
+        db.stateDao().upsert(
+            existing.copy(
+                baselineTakenAt = System.currentTimeMillis(),
+                basePushups = baseline.pushups,
+                baseSquats = baseline.squats,
+                basePlankSec = baseline.plankSec,
+                basePullups = baseline.pullups,
+                baseBurpees = baseline.burpees,
+                baseCardioMinutes = baseline.cardioMinutes,
+                baseFlexibility = baseline.flexibilityScale
+            )
+        )
+    }
+
     suspend fun completeOnboarding(
         heroId: String, buildId: String,
         profile: Profile, nutrition: NutritionProfile, baseline: Baseline, gear: Set<String>
     ) {
         val now = System.currentTimeMillis()
+        val existing = db.stateDao().get()
         db.stateDao().upsert(
-            UserStateEntity(
+            (existing ?: UserStateEntity()).copy(
                 id = 0,
                 onboarded = true,
                 heroId = heroId,
@@ -136,11 +201,13 @@ class StateRepository(private val db: AppDatabase) {
                 goal = nutrition.goal.key,
                 mealsPerDay = nutrition.mealsPerDay,
                 keepTreats = nutrition.keepTreats.joinToString(",") { it.key },
+                baselineTakenAt = existing?.baselineTakenAt ?: now,
                 basePushups = baseline.pushups, baseSquats = baseline.squats,
                 basePlankSec = baseline.plankSec, basePullups = baseline.pullups,
                 baseBurpees = baseline.burpees, baseCardioMinutes = baseline.cardioMinutes,
                 baseFlexibility = baseline.flexibilityScale,
                 programStartDate = now, combo = 10, lastComboUpdate = now
+                // disclaimerAcceptedAt is preserved from existing row — user accepted way earlier
             )
         )
         db.gearDao().setAll(gear)

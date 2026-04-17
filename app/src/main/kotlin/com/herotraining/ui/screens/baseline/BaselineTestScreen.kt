@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import com.herotraining.data.catalog.TestExerciseCatalog
 import com.herotraining.data.catalog.TestKind
 import com.herotraining.data.model.Baseline
-import com.herotraining.data.model.Hero
 import com.herotraining.data.model.Injury
 import com.herotraining.ui.components.PrimaryOutlinedButton
 import com.herotraining.ui.components.SelectButton
@@ -52,10 +51,10 @@ import com.herotraining.ui.theme.ImpactLike
 
 @Composable
 fun BaselineTestScreen(
-    hero: Hero,
     injuries: Set<Injury>,
     onBack: () -> Unit,
-    onComplete: (Baseline) -> Unit
+    onComplete: (Baseline) -> Unit,
+    accentColor: Color = HeroPalette.Red500
 ) {
     val tests = remember(injuries) { TestExerciseCatalog.forInjuries(injuries) }
     // step=-1 — intro; 0..tests.size-1 — current exercise
@@ -65,7 +64,7 @@ fun BaselineTestScreen(
     var scaleValue by remember { mutableStateOf<Int?>(null) }
 
     if (step == -1) {
-        Intro(hero, tests.map { it.name }, onBack) { step = 0 }
+        Intro(accentColor, tests.map { it.name }, onBack) { step = 0 }
         return
     }
 
@@ -109,7 +108,7 @@ fun BaselineTestScreen(
                 modifier = Modifier.clickable { prev() }.padding(vertical = 8.dp)
             )
             Spacer(Modifier.height(16.dp))
-            StepProgress(current = step, total = tests.size, activeColor = hero.color)
+            StepProgress(current = step, total = tests.size, activeColor = accentColor)
             Spacer(Modifier.height(20.dp))
             Text(
                 text = "УПРАЖНЕНИЕ ${step + 1}/${tests.size}",
@@ -122,7 +121,7 @@ fun BaselineTestScreen(
                     fontFamily = ImpactLike,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Black,
-                    color = hero.color
+                    color = accentColor
                 )
             )
             Spacer(Modifier.height(16.dp))
@@ -139,7 +138,7 @@ fun BaselineTestScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Box(Modifier.width(2.dp).height(20.dp).background(hero.color))
+                    Box(Modifier.width(2.dp).height(20.dp).background(accentColor))
                     Spacer(Modifier.width(10.dp))
                     Text(
                         text = test.instruction,
@@ -156,7 +155,7 @@ fun BaselineTestScreen(
                             SelectButton(
                                 label = "$v. $label",
                                 selected = scaleValue == v,
-                                accentColor = hero.color,
+                                accentColor = accentColor,
                                 onClick = { scaleValue = v }
                             )
                         }
@@ -175,16 +174,16 @@ fun BaselineTestScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             textStyle = TextStyle(
                                 fontFamily = ImpactLike, fontSize = 32.sp,
-                                fontWeight = FontWeight.Black, color = hero.color,
+                                fontWeight = FontWeight.Black, color = accentColor,
                                 textAlign = TextAlign.Center
                             ),
                             modifier = Modifier.weight(1f),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = hero.color,
-                                unfocusedIndicatorColor = hero.color.copy(alpha = 0.5f),
-                                cursorColor = hero.color
+                                focusedIndicatorColor = accentColor,
+                                unfocusedIndicatorColor = accentColor.copy(alpha = 0.5f),
+                                cursorColor = accentColor
                             )
                         )
                         Spacer(Modifier.width(12.dp))
@@ -213,7 +212,7 @@ fun BaselineTestScreen(
                 }
                 PrimaryOutlinedButton(
                     text = if (isLast) "ЗАВЕРШИТЬ →" else "ДАЛЕЕ →",
-                    accentColor = hero.color,
+                    accentColor = accentColor,
                     onClick = saveAndNext,
                     enabled = canProceed,
                     modifier = Modifier.weight(2f)
@@ -224,7 +223,7 @@ fun BaselineTestScreen(
 }
 
 @Composable
-private fun Intro(hero: Hero, names: List<String>, onBack: () -> Unit, onStart: () -> Unit) {
+private fun Intro(accentColor: Color, names: List<String>, onBack: () -> Unit, onStart: () -> Unit) {
     com.herotraining.ui.components.HeroBackgroundScaffold {
         Column(
             modifier = Modifier
@@ -241,11 +240,11 @@ private fun Intro(hero: Hero, names: List<String>, onBack: () -> Unit, onStart: 
             )
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.ChecklistRtl, contentDescription = null, tint = hero.color, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.ChecklistRtl, contentDescription = null, tint = accentColor, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "ТЕСТ БАЗЫ",
-                    style = TextStyle(fontFamily = ImpactLike, fontSize = 28.sp, fontWeight = FontWeight.Black, color = hero.color)
+                    style = TextStyle(fontFamily = ImpactLike, fontSize = 28.sp, fontWeight = FontWeight.Black, color = accentColor)
                 )
             }
             Text(
@@ -256,7 +255,7 @@ private fun Intro(hero: Hero, names: List<String>, onBack: () -> Unit, onStart: 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(2.dp, hero.color)
+                    .border(2.dp, accentColor)
                     .padding(16.dp)
             ) {
                 Text(
@@ -284,7 +283,7 @@ private fun Intro(hero: Hero, names: List<String>, onBack: () -> Unit, onStart: 
             Spacer(Modifier.height(20.dp))
             PrimaryOutlinedButton(
                 text = "НАЧАТЬ →",
-                accentColor = hero.color,
+                accentColor = accentColor,
                 onClick = onStart
             )
         }

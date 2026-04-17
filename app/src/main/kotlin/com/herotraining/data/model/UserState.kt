@@ -3,6 +3,7 @@ package com.herotraining.data.model
 /** Runtime UI model — materialized from Room entities. */
 data class UserState(
     val onboarded: Boolean,
+    val disclaimerAccepted: Boolean,
     val hero: Hero?,
     val build: HeroBuild?,
     val profile: Profile?,
@@ -40,7 +41,7 @@ data class LoggedMeal(
 
 /** Fresh user — nothing loaded, not onboarded. */
 val DEFAULT_USER_STATE = UserState(
-    onboarded = false, hero = null, build = null, profile = null,
+    onboarded = false, disclaimerAccepted = false, hero = null, build = null, profile = null,
     nutrition = null, baseline = null, gear = emptySet(),
     programStartEpochMs = null, streak = 0, lastCheckin = null,
     coins = 0, xp = 0, rankPoints = 0, combo = 0,
