@@ -125,7 +125,7 @@ private fun NavTabButton(
         contentDescription = contentDescription,
         contentScale = ContentScale.Fit,
         modifier = modifier
-            .aspectRatio(188f / 168f)
+            .aspectRatio(244f / 240f)
             .scale(scale)
             .clickable(
                 interactionSource = interaction,
