@@ -15,8 +15,8 @@ android {
         applicationId = "com.herotraining"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "0.5.2"
+        versionCode = 22
+        versionName = "0.5.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
