@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +10,15 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+// Read secret keys from local.properties (gitignored). Fallback to empty string so
+// the build still succeeds for a clean checkout — features that need a key will
+// show a graceful "not configured" error at runtime.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) FileInputStream(f).use { load(it) }
+}
+val geminiApiKey: String = localProps.getProperty("GEMINI_API_KEY", "")
+
 android {
     namespace = "com.herotraining"
     compileSdk = 35
@@ -15,10 +27,13 @@ android {
         applicationId = "com.herotraining"
         minSdk = 26
         targetSdk = 34
-        versionCode = 24
-        versionName = "0.5.5"
+        versionCode = 25
+        versionName = "0.5.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        // Exposed to Kotlin as BuildConfig.GEMINI_API_KEY
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -45,6 +60,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -93,6 +109,9 @@ dependencies {
 
     // Coil — image loading for progress photos
     implementation(libs.coil.compose)
+
+    // Google AI (Gemini) — mentor chat, workout generation, food recognition
+    implementation(libs.google.generativeai)
 
     testImplementation(libs.junit)
 
