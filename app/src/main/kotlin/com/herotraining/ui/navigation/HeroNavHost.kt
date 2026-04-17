@@ -21,6 +21,7 @@ import com.herotraining.ui.screens.dashboard.DashboardHost
 import com.herotraining.ui.screens.gear.HeroGearFormScreen
 import com.herotraining.ui.screens.hero.HeroPlaceholder
 import com.herotraining.ui.screens.hero.HeroSelectScreen
+import com.herotraining.ui.screens.auth.SignInScreen
 import com.herotraining.ui.screens.nutrition.NutritionFormScreen
 import com.herotraining.ui.screens.profile.ProfileFormScreen
 import com.herotraining.ui.screens.profile_view.ProfileScreen
@@ -39,13 +40,44 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
         composable(Destinations.BOOT) {
             BootSplashScreen(onReady = {
                 scope.launch {
+                    val signedIn = app.authRepository.status.value is com.herotraining.data.auth.AuthStatus.SignedIn
                     val onboarded = app.stateRepository.snapshot().onboarded
-                    val target = if (onboarded) Destinations.DASHBOARD else Destinations.PROFILE_INTAKE
+                    val target = when {
+                        signedIn && onboarded -> Destinations.DASHBOARD
+                        signedIn && !onboarded -> {
+                            // Try to pull from Firestore before asking anketa again
+                            val uid = (app.authRepository.status.value as com.herotraining.data.auth.AuthStatus.SignedIn).uid
+                            val pulled = runCatching { app.firestoreSync.pullAll(uid) }.getOrDefault(false)
+                            if (pulled && app.stateRepository.snapshot().onboarded) Destinations.DASHBOARD
+                            else Destinations.PROFILE_INTAKE
+                        }
+                        !signedIn && onboarded -> Destinations.DASHBOARD
+                        else -> Destinations.SIGN_IN
+                    }
                     navController.navigate(target) {
                         popUpTo(Destinations.BOOT) { inclusive = true }
                     }
                 }
             })
+        }
+
+        composable(Destinations.SIGN_IN) {
+            SignInScreen(
+                onSignedIn = {
+                    scope.launch {
+                        val onboarded = app.stateRepository.snapshot().onboarded
+                        val dst = if (onboarded) Destinations.DASHBOARD else Destinations.PROFILE_INTAKE
+                        navController.navigate(dst) {
+                            popUpTo(Destinations.SIGN_IN) { inclusive = true }
+                        }
+                    }
+                },
+                onSkip = {
+                    navController.navigate(Destinations.PROFILE_INTAKE) {
+                        popUpTo(Destinations.SIGN_IN) { inclusive = true }
+                    }
+                }
+            )
         }
 
         // Anketa entry point — age, height, weight, sex, BMI + rest of profile steps
@@ -166,6 +198,11 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                                 profile = profile, nutrition = nutrition,
                                 baseline = baseline, gear = draft.gear
                             )
+                            // Push to cloud if signed in
+                            val status = app.authRepository.status.value
+                            if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
+                                runCatching { app.firestoreSync.pushAll(status.uid) }
+                            }
                             navController.navigate(Destinations.DASHBOARD) {
                                 popUpTo(Destinations.BOOT) { inclusive = true }
                             }

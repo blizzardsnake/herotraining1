@@ -12,7 +12,20 @@
           "package_name": "com.herotraining"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "490017466168-beaf5238ou6thqjd4jqg5mvhqv83iuoq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.herotraining",
+            "certificate_hash": "d01bee9620aa6c9bbbf8d61e9c908c4f1cbcc9fc"
+          }
+        },
+        {
+          "client_id": "490017466168-q2lh3d6ulga7vuburldkptcqrsllfuai.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDRigf1mvKkEngGN450xCWhjPBMu3nBS30"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "490017466168-q2lh3d6ulga7vuburldkptcqrsllfuai.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

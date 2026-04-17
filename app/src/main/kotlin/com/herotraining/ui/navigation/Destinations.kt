@@ -2,6 +2,7 @@ package com.herotraining.ui.navigation
 
 object Destinations {
     const val BOOT = "boot"
+    const val SIGN_IN = "sign_in"
     const val PROFILE_INTAKE = "profile"              // new anketa entry point
     const val HERO_SELECT = "hero/{gender}"
     const val HERO_GEAR_FORM = "gear/{heroId}"
