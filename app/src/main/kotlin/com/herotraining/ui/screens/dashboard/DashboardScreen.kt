@@ -51,6 +51,7 @@ import com.herotraining.domain.calc.getTodayWorkout
 import com.herotraining.ui.components.ComboBar
 import com.herotraining.ui.components.QuestWindow
 import com.herotraining.ui.components.StatTile
+import com.herotraining.ui.components.UpdateBanner
 import com.herotraining.ui.theme.HeroPalette
 import com.herotraining.ui.theme.ImpactLike
 
@@ -126,6 +127,15 @@ fun DashboardScreen(
                     .widthIn(max = 720.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Update banner (shown when newer release found on GitHub)
+                val updateState by vm.update.collectAsStateWithLifecycle()
+                UpdateBanner(
+                    state = updateState,
+                    accent = hero.color,
+                    onDownload = { vm.downloadUpdate(it) },
+                    onInstall = { vm.launchInstaller() }
+                )
+
                 ComboBar(combo = combo, hero = hero)
 
                 // Rank tile

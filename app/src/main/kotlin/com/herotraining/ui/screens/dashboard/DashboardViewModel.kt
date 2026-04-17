@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val repo: StateRepository = (app as HeroApp).stateRepository
     private val hc = (app as HeroApp).healthConnect
+    private val updateDownloader = com.herotraining.update.UpdateDownloader(app)
 
     val state: StateFlow<UserState> = repo.observeState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DEFAULT_USER_STATE)
@@ -24,9 +25,15 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _steps = kotlinx.coroutines.flow.MutableStateFlow(0L)
     val steps: StateFlow<Long> = _steps
 
+    private val _update = kotlinx.coroutines.flow.MutableStateFlow<com.herotraining.ui.components.UpdateState>(
+        com.herotraining.ui.components.UpdateState.Hidden
+    )
+    val update: StateFlow<com.herotraining.ui.components.UpdateState> = _update
+
     init {
         viewModelScope.launch { repo.rolloverDayIfNeeded() }
         viewModelScope.launch { refreshHealth() }
+        viewModelScope.launch { checkForUpdate() }
     }
 
     private suspend fun refreshHealth() {
@@ -36,6 +43,34 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onHealthPermissionsGranted() = viewModelScope.launch { refreshHealth() }
+
+    private suspend fun checkForUpdate() {
+        val info = com.herotraining.update.UpdateChecker.check(getApplication()) ?: return
+        _update.value = com.herotraining.ui.components.UpdateState.Available(info)
+    }
+
+    fun downloadUpdate(info: com.herotraining.update.UpdateInfo) {
+        _update.value = com.herotraining.ui.components.UpdateState.Downloading(info, 0)
+        updateDownloader.download(
+            info = info,
+            onProgress = { pct ->
+                val cur = _update.value
+                if (cur is com.herotraining.ui.components.UpdateState.Downloading) {
+                    _update.value = cur.copy(percent = pct)
+                }
+            },
+            onReady = { file ->
+                _update.value = com.herotraining.ui.components.UpdateState.ReadyToInstall(info, file.absolutePath)
+            }
+        )
+    }
+
+    fun launchInstaller() {
+        val cur = _update.value
+        if (cur is com.herotraining.ui.components.UpdateState.ReadyToInstall) {
+            updateDownloader.launchInstaller(java.io.File(cur.apkPath))
+        }
+    }
 
     fun markTraining() = mark(QuestType.TRAINING, rp = 15, comboDelta = 15)
     fun markNutrition() = mark(QuestType.NUTRITION, rp = 10, comboDelta = 10)
