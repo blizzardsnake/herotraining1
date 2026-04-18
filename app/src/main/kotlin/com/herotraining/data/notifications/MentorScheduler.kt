@@ -2,10 +2,13 @@ package com.herotraining.data.notifications
 
 import android.content.Context
 import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.herotraining.domain.schedule.Unlocks
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,6 +25,9 @@ object MentorScheduler {
     private const val WORK_NUTRITION_DAY1 = "mentor.nutrition.day1"
     private const val WORK_TRAINING_DAY1 = "mentor.training.day1"
     private const val WORK_TEST = "mentor.test"
+    private const val WORK_MEAL_BREAKFAST = "meal.breakfast"
+    private const val WORK_MEAL_LUNCH = "meal.lunch"
+    private const val WORK_MEAL_DINNER = "meal.dinner"
 
     /**
      * Планирует два пуша для Day 1:
@@ -49,6 +55,46 @@ object MentorScheduler {
         val wm = WorkManager.getInstance(ctx)
         wm.cancelUniqueWork(WORK_NUTRITION_DAY1)
         wm.cancelUniqueWork(WORK_TRAINING_DAY1)
+        wm.cancelUniqueWork(WORK_MEAL_BREAKFAST)
+        wm.cancelUniqueWork(WORK_MEAL_LUNCH)
+        wm.cancelUniqueWork(WORK_MEAL_DINNER)
+    }
+
+    /**
+     * Планирует ежедневные напоминания "запиши приём пищи" на 09:00/13:00/19:00.
+     * Каждое — PeriodicWorkRequest с интервалом 24ч.
+     *
+     * Вызывается из completeOnboarding сразу после scheduleFirstDay().
+     * Если вызывается повторно (KEEP policy) — существующий цикл не перебивается.
+     */
+    fun scheduleDailyMealReminders(ctx: Context) {
+        scheduleDailyAt(ctx, 9, MealReminderWorker.KIND_BREAKFAST, WORK_MEAL_BREAKFAST)
+        scheduleDailyAt(ctx, 13, MealReminderWorker.KIND_LUNCH, WORK_MEAL_LUNCH)
+        scheduleDailyAt(ctx, 19, MealReminderWorker.KIND_DINNER, WORK_MEAL_DINNER)
+    }
+
+    private fun scheduleDailyAt(ctx: Context, hourOfDay: Int, kind: String, uniqueName: String) {
+        val delay = millisUntilNext(hourOfDay)
+        val req = PeriodicWorkRequestBuilder<MealReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .setInputData(Data.Builder().putString(MealReminderWorker.KEY_KIND, kind).build())
+            .build()
+        WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
+            uniqueName, ExistingPeriodicWorkPolicy.KEEP, req
+        )
+    }
+
+    /** Возвращает сколько миллисекунд до ближайшего [hourOfDay] по локальному времени. */
+    private fun millisUntilNext(hourOfDay: Int): Long {
+        val now = Calendar.getInstance()
+        val target = (now.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, hourOfDay)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        if (!target.after(now)) target.add(Calendar.DAY_OF_MONTH, 1)
+        return target.timeInMillis - now.timeInMillis
     }
 
     /**

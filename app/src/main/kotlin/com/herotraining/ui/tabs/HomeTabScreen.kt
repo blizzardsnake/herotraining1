@@ -3,21 +3,20 @@ package com.herotraining.ui.tabs
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import com.herotraining.HeroApp
 import com.herotraining.domain.schedule.Unlocks
 import com.herotraining.ui.screens.dashboard.DashboardHost
 import com.herotraining.ui.screens.tomorrow.TomorrowLockScreen
+import kotlinx.coroutines.launch
 
 /**
  * ГЛАВНАЯ tab.
  *
- * Two modes:
- *   1) TOMORROW-LOCK — если онбординг завершён, но ещё не наступило 10:00 следующего дня,
- *      показываем [TomorrowLockScreen] с countdown. Тренировка заблокирована до анлока.
- *   2) NORMAL       — обычный Dashboard/Home.
- *
- * Nav-кнопки внизу всё ещё активны: юзер может уйти в Профиль/КВЕСТЫ/ПРОГРЕСС/ТРЕНИРОВКИ
- * (хотя последняя тоже заблочится в v0.8).
+ * Два режима:
+ *   1) TOMORROW-LOCK — онбординг завершён, но ещё не наступило 10:00 следующего дня.
+ *      Показываем countdown + возможность записывать еду (наблюдение паттерна).
+ *   2) NORMAL       — обычный Dashboard.
  */
 @Composable
 fun HomeTabScreen(
@@ -28,6 +27,7 @@ fun HomeTabScreen(
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val app = ctx.applicationContext as HeroApp
+    val scope = rememberCoroutineScope()
     val state by app.stateRepository.observeState()
         .collectAsState(initial = com.herotraining.data.model.DEFAULT_USER_STATE)
 
@@ -40,7 +40,19 @@ fun HomeTabScreen(
         TomorrowLockScreen(
             programStartEpochMs = programStart!!,
             heroName = state.hero?.name,
-            buildPhilosophy = state.build?.philosophy
+            buildPhilosophy = state.build?.philosophy,
+            todayMeals = state.todayMeals,
+            onLogMeal = { text, kcal, untracked ->
+                scope.launch {
+                    app.stateRepository.addMeal(
+                        text = text,
+                        kcal = kcal,
+                        portion = null,
+                        untracked = untracked,
+                        comboDelta = 0   // никаких наград за логирование в режиме наблюдения
+                    )
+                }
+            }
         )
     } else {
         DashboardHost(

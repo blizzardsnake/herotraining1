@@ -2,12 +2,12 @@ package com.herotraining.ui.screens.tomorrow
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LockClock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -33,8 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.herotraining.data.model.LoggedMeal
 import com.herotraining.domain.schedule.Unlocks
 import com.herotraining.ui.components.HeroBackgroundScaffold
+import com.herotraining.ui.components.MealKind
+import com.herotraining.ui.components.MealLogDialog
 import com.herotraining.ui.scifi.CornerBrackets
 import com.herotraining.ui.theme.HeroPalette
 import com.herotraining.ui.theme.ImpactLike
@@ -43,25 +49,31 @@ import com.herotraining.ui.theme.Rajdhani
 import com.herotraining.ui.theme.heroTheme
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 /**
- * Экран-замок который висит поверх Dashboard между моментом завершения онбординга
- * и 10:00 следующего календарного дня. Юзер видит:
- *   - Приветственный заголовок (в голосе ментора если есть, иначе общий)
- *   - Countdown "hh:mm:ss" до разблокировки тренировки
- *   - Время когда откроется план питания (06:00 завтра) — просто info
- *   - Цитату из выбранного билда в качестве filler-контента
+ * Экран-замок между онбордингом и 10:00 следующего дня.
  *
- * Анкета/профиль/смена героя всё ещё доступны через нижнюю навигацию (мы не забираем
- * у юзера возможность что-то подкрутить пока ждёт).
+ * Пока юзер ждёт первой миссии — МОЖЕТ:
+ *   - Смотреть countdown
+ *   - Записывать приёмы пищи (наблюдение паттерна: когда в реале ест)
+ *   - Ходить в другие табы (профиль/прогресс/квесты)
+ *
+ * НЕ МОЖЕТ:
+ *   - Запускать тренировку (она и UI для неё появятся после 10:00)
+ *
+ * Сегодняшние логи питания показываются списком под countdown'ом — юзер видит что "да,
+ * приложение меня слушает" и механика честности запускается с первого дня.
  */
 @Composable
 fun TomorrowLockScreen(
     programStartEpochMs: Long,
     heroName: String?,
-    buildPhilosophy: String?
+    buildPhilosophy: String?,
+    todayMeals: List<LoggedMeal>,
+    onLogMeal: (text: String, kcal: Int, untracked: Boolean) -> Unit
 ) {
     val th = heroTheme()
     val accent = th.heroColor
@@ -69,7 +81,6 @@ fun TomorrowLockScreen(
     val trainingUnlockMs = Unlocks.trainingUnlockAt(programStartEpochMs)
     val nutritionUnlockMs = Unlocks.nutritionUnlockAt(programStartEpochMs)
 
-    // Live countdown — recomposes каждую секунду
     var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(trainingUnlockMs) {
         while (true) {
@@ -80,20 +91,21 @@ fun TomorrowLockScreen(
     val remainingTraining = (trainingUnlockMs - nowMs).coerceAtLeast(0L)
     val remainingNutrition = (nutritionUnlockMs - nowMs).coerceAtLeast(0L)
 
+    var showMealDialog by remember { mutableStateOf(false) }
+
     HeroBackgroundScaffold {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(top = 16.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            // ── Header pill ──────────────────────────────────────
+            // Header pill
             Row(
-                modifier = Modifier
-                    .border(1.dp, accent)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                modifier = Modifier.border(1.dp, accent).padding(horizontal = 10.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Filled.LockClock, null, tint = accent, modifier = Modifier.size(14.dp))
@@ -105,30 +117,29 @@ fun TomorrowLockScreen(
             }
             Spacer(Modifier.height(16.dp))
 
-            // ── Big title ────────────────────────────────────────
             Text(
                 text = heroName?.let { "ЗАВТРА ТЫ ВСТУПАЕШЬ В РИТМ ${it.uppercase()}" }
                     ?: "ЗАВТРА НАЧИНАЕТСЯ ПРОТОКОЛ",
                 style = TextStyle(
                     fontFamily = Rajdhani, fontWeight = FontWeight.Bold,
-                    fontSize = 30.sp, color = Color.White, letterSpacing = 1.sp, lineHeight = 34.sp
+                    fontSize = 28.sp, color = Color.White, letterSpacing = 1.sp, lineHeight = 32.sp
                 )
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Все мы любим начинать завтра. Мы это уважаем.",
+                "Все мы любим начинать завтра. Мы это уважаем.",
                 style = TextStyle(fontFamily = Orbitron, fontSize = 10.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral400, lineHeight = 14.sp)
             )
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // ── Big countdown box ────────────────────────────────
+            // Countdown card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(2.dp, accent)
                     .background(accent.copy(alpha = 0.08f))
-                    .padding(horizontal = 14.dp, vertical = 22.dp)
+                    .padding(horizontal = 14.dp, vertical = 20.dp)
             ) {
                 CornerBrackets(color = accent, armLength = 18.dp, thickness = 2.dp)
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -138,15 +149,15 @@ fun TomorrowLockScreen(
                     )
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = formatCountdown(remainingTraining),
+                        formatCountdown(remainingTraining),
                         style = TextStyle(
                             fontFamily = ImpactLike, fontWeight = FontWeight.Black,
-                            fontSize = 56.sp, color = accent, letterSpacing = 2.sp
+                            fontSize = 48.sp, color = accent, letterSpacing = 2.sp
                         )
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "РАЗБЛОК В ${formatClockTime(trainingUnlockMs)}",
+                        "РАЗБЛОК В ${formatClockTime(trainingUnlockMs)}",
                         style = TextStyle(fontFamily = Orbitron, fontSize = 10.sp, letterSpacing = 3.sp, color = HeroPalette.Neutral500)
                     )
                 }
@@ -154,12 +165,9 @@ fun TomorrowLockScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            // ── Nutrition-plan row ───────────────────────────────
+            // Nutrition unlock info
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, HeroPalette.Neutral800)
-                    .padding(14.dp)
+                modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral800).padding(14.dp)
             ) {
                 Text(
                     "ПЛАН ПИТАНИЯ · ДЕНЬ 1",
@@ -172,25 +180,80 @@ fun TomorrowLockScreen(
                     else "✓ УЖЕ ДОСТУПЕН",
                     style = TextStyle(fontFamily = Rajdhani, fontSize = 14.sp, color = HeroPalette.Neutral300)
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Подстраивается под стиль героя + твои вкусовые предпочтения.",
-                    style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral500, lineHeight = 14.sp)
-                )
             }
 
             Spacer(Modifier.height(18.dp))
 
-            // ── Build philosophy filler (if any) ─────────────────
-            if (!buildPhilosophy.isNullOrBlank()) {
-                Box(
+            // ── MEAL LOG — доступен прямо сейчас, даже до unlock'а
+            Column(
+                modifier = Modifier.fillMaxWidth().border(1.dp, accent.copy(alpha = 0.5f)).padding(14.dp)
+            ) {
+                Text(
+                    "ПИТАНИЕ · НАБЛЮДЕНИЕ",
+                    style = TextStyle(fontFamily = Orbitron, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent)
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Первую неделю просто записывай что ешь. Без подсчётов, без планов — просто честно отмечай. " +
+                        "Мы учимся твоему ритму чтобы со 2-й недели построить план под тебя.",
+                    style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral400, lineHeight = 15.sp)
+                )
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    "📝 ЗАПИСАТЬ ПРИЁМ ПИЩИ",
+                    style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, HeroPalette.Neutral900)
-                        .padding(14.dp)
+                        .border(1.dp, accent)
+                        .clickable { showMealDialog = true }
+                        .padding(vertical = 10.dp),
+                )
+
+                if (todayMeals.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "СЕГОДНЯ ЗАПИСАНО",
+                        style = TextStyle(fontFamily = Orbitron, fontSize = 9.sp, letterSpacing = 2.sp, color = HeroPalette.Neutral500)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    todayMeals.forEach { m ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.Check, null, tint = accent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    m.text,
+                                    style = TextStyle(fontSize = 13.sp, color = HeroPalette.Neutral300),
+                                    maxLines = 2
+                                )
+                                val kcalText = if (m.kcal > 0) "${m.kcal} ккал · ${m.time}"
+                                               else "не подсчитано · ${m.time}"
+                                Text(
+                                    kcalText,
+                                    style = TextStyle(fontSize = 10.sp, color = HeroPalette.Neutral600)
+                                )
+                            }
+                        }
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(HeroPalette.Neutral900))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(18.dp))
+
+            if (!buildPhilosophy.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().border(1.dp, HeroPalette.Neutral900).padding(14.dp)
                 ) {
                     Text(
-                        text = "«$buildPhilosophy»",
+                        "«$buildPhilosophy»",
                         style = TextStyle(
                             fontFamily = Rajdhani, fontSize = 14.sp,
                             color = HeroPalette.Neutral300, lineHeight = 20.sp
@@ -201,16 +264,31 @@ fun TomorrowLockScreen(
                 }
             }
 
-            Spacer(Modifier.height(28.dp))
-
-            // ── Footer hint ──────────────────────────────────────
-            Text(
-                text = "Пока висим в режиме ожидания можешь подкрутить профиль или поменять героя через нижнее меню.",
-                style = TextStyle(fontFamily = Orbitron, fontSize = 9.sp, letterSpacing = 1.sp, color = HeroPalette.Neutral600, lineHeight = 14.sp),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(Modifier.height(20.dp))
         }
+    }
+
+    if (showMealDialog) {
+        MealLogDialog(
+            accent = accent,
+            onDismiss = { showMealDialog = false },
+            onSave = { text, kcal, untracked ->
+                onLogMeal(text, kcal, untracked)
+                showMealDialog = false
+            },
+            defaultKind = guessMealKind(nowMs)
+        )
+    }
+}
+
+/** Угадываем тип приёма по текущему часу — чтоб диалог открывался с адекватным default'ом. */
+private fun guessMealKind(nowMs: Long): MealKind {
+    val hour = Calendar.getInstance().apply { timeInMillis = nowMs }.get(Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..10 -> MealKind.BREAKFAST
+        in 11..15 -> MealKind.LUNCH
+        in 16..21 -> MealKind.DINNER
+        else -> MealKind.SNACK
     }
 }
 

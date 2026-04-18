@@ -254,11 +254,15 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                                 baseline = baseline, gear = draft.gear
                             )
                             // Schedule the Day-1 notifications (06:00 nutrition / 10:00 training)
+                            // + recurring meal reminders (09:00 breakfast / 13:00 lunch / 19:00 dinner).
                             val snapshot = app.stateRepository.snapshot()
                             val programStart = snapshot.programStartEpochMs
                             if (programStart != null) {
                                 com.herotraining.data.notifications.MentorScheduler.scheduleFirstDay(
                                     context.applicationContext, programStart
+                                )
+                                com.herotraining.data.notifications.MentorScheduler.scheduleDailyMealReminders(
+                                    context.applicationContext
                                 )
                             }
                             navController.navigate(Destinations.DASHBOARD) {
