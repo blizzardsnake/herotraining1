@@ -106,15 +106,18 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
         composable(Destinations.DISCLAIMER) {
             DisclaimerScreen(
                 onAccepted = {
+                    // Navigate IMMEDIATELY after local DB write — cloud push is fire-and-forget
+                    // so a hanging network request can't strand the user on this screen.
                     scope.launch {
                         app.stateRepository.acceptDisclaimer()
-                        // Push state to cloud if signed in
+                        navController.navigate(Destinations.PROFILE_INTAKE) {
+                            popUpTo(Destinations.DISCLAIMER) { inclusive = true }
+                        }
+                    }
+                    scope.launch {
                         val status = app.authRepository.status.value
                         if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
                             runCatching { app.firestoreSync.pushAll(status.uid) }
-                        }
-                        navController.navigate(Destinations.PROFILE_INTAKE) {
-                            popUpTo(Destinations.DISCLAIMER) { inclusive = true }
                         }
                     }
                 }
