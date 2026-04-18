@@ -25,11 +25,11 @@ object GeminiClient {
      * Add new ones at the TOP of the list when Google ships them.
      */
     val MODEL_CANDIDATES = listOf(
-        "gemini-2.0-flash-exp",     // generous free tier through 2025/2026
+        "gemini-2.5-flash",         // подтверждено что работает на текущем v1beta (апр 2026)
+        "gemini-2.0-flash-exp",     // generous free tier fallback
         "gemini-2.0-flash",         // stable if GA
         "gemini-1.5-flash-002",     // pinned recent 1.5 flash
         "gemini-1.5-flash-latest",
-        "gemini-2.5-flash",         // optimistic — if it exists, try it
         "gemini-1.5-flash-8b"       // cheapest, smallest
     )
 
