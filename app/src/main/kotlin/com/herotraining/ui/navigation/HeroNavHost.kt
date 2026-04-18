@@ -246,18 +246,29 @@ fun HeroNavHost(navController: NavHostController = rememberNavController()) {
                 OnboardingSummaryScreen(
                     hero = hero, build = build, profile = profile, gear = draft.gear,
                     onContinue = {
+                        // Navigate immediately; cloud push + schedule do not block UI.
                         scope.launch {
                             app.stateRepository.completeOnboarding(
                                 heroId = hero.id, buildId = build.id,
                                 profile = profile, nutrition = nutrition,
                                 baseline = baseline, gear = draft.gear
                             )
-                            val status = app.authRepository.status.value
-                            if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
-                                runCatching { app.firestoreSync.pushAll(status.uid) }
+                            // Schedule the Day-1 notifications (06:00 nutrition / 10:00 training)
+                            val snapshot = app.stateRepository.snapshot()
+                            val programStart = snapshot.programStartEpochMs
+                            if (programStart != null) {
+                                com.herotraining.data.notifications.MentorScheduler.scheduleFirstDay(
+                                    context.applicationContext, programStart
+                                )
                             }
                             navController.navigate(Destinations.DASHBOARD) {
                                 popUpTo(Destinations.BOOT) { inclusive = true }
+                            }
+                        }
+                        scope.launch {
+                            val status = app.authRepository.status.value
+                            if (status is com.herotraining.data.auth.AuthStatus.SignedIn) {
+                                runCatching { app.firestoreSync.pushAll(status.uid) }
                             }
                         }
                     }

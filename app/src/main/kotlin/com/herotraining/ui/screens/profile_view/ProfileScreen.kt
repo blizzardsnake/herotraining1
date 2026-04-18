@@ -378,6 +378,9 @@ private fun OverviewTab(
             accent = accent
         )
 
+        // PUSH SMOKE TEST — verify notification permission + WorkManager pipeline
+        PushSmokeTestCard(accent = accent)
+
         // HARD RESET — wipes everything locally AND in Firestore
         var showHardResetDialog by remember { mutableStateOf(false) }
         Column(
@@ -419,6 +422,7 @@ private fun OverviewTab(
                                     heroApp.firestoreSync.deleteUserDoc(status.uid)
                                 }
                                 heroApp.stateRepository.hardReset()
+                                com.herotraining.data.notifications.MentorScheduler.cancelAll(ctx.applicationContext)
                                 showHardResetDialog = false
                                 onHardReset()
                             }
@@ -636,6 +640,83 @@ private fun DiaryTab(
                 Text(e.text, style = TextStyle(fontSize = 13.sp, color = HeroPalette.Neutral300))
             }
         }
+    }
+}
+
+/**
+ * Пуш-tester карточка. Проверяет цепочку: permission → WorkManager → NotificationManager.
+ *
+ * - Запрос разрешения POST_NOTIFICATIONS (Android 13+) — в одно нажатие
+ * - Кнопка "послать тестовый пуш сейчас" — триггерит MentorPushWorker немедленно
+ * - Опционально: через 10 секунд приходит уведомление с Gemini-сгенерированным текстом
+ *   (или fallback-статикой если AI недоступен)
+ */
+@Composable
+private fun PushSmokeTestCard(accent: Color) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+
+    var permissionGranted by remember {
+        mutableStateOf(
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    ctx, android.Manifest.permission.POST_NOTIFICATIONS
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+
+    val permLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted -> permissionGranted = granted }
+
+    var triggered by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().border(1.dp, accent.copy(alpha = 0.6f)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            "PUSH · SMOKE TEST",
+            style = TextStyle(fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent)
+        )
+        Text(
+            text = if (permissionGranted) "Разрешение есть. Жми чтобы послать тестовый пуш прямо сейчас."
+                   else "Нужно разрешение на уведомления (Android 13+).",
+            style = TextStyle(fontSize = 11.sp, color = HeroPalette.Neutral400, lineHeight = 15.sp)
+        )
+
+        if (!permissionGranted) {
+            Text(
+                "🔔 ВКЛЮЧИТЬ ПУШИ",
+                style = TextStyle(fontSize = 12.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = accent),
+                modifier = Modifier
+                    .clickable {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            permLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                    .padding(vertical = 6.dp)
+            )
+        }
+
+        Text(
+            if (triggered) "✓ ОТПРАВЛЕНО · ПРОВЕРЬ ШТОРКУ" else "📨 ОТПРАВИТЬ ТЕСТОВЫЙ ПУШ",
+            style = TextStyle(
+                fontSize = 12.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold,
+                color = if (permissionGranted) accent else HeroPalette.Neutral600
+            ),
+            modifier = Modifier
+                .then(
+                    if (permissionGranted && !triggered) Modifier.clickable {
+                        com.herotraining.data.notifications.MentorScheduler.triggerTestPush(
+                            ctx.applicationContext,
+                            com.herotraining.data.notifications.MentorPushWorker.KIND_TRAINING
+                        )
+                        triggered = true
+                    } else Modifier
+                )
+                .padding(vertical = 6.dp)
+        )
     }
 }
 

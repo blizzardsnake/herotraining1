@@ -348,6 +348,12 @@ class StateRepository(private val db: AppDatabase) {
         db.gearDao().clear()
     }
 
+    /** Full wipe + cancel scheduled notifications (called from UI with context). */
+    suspend fun hardResetAndCancelSchedules(ctx: android.content.Context) {
+        hardReset()
+        com.herotraining.data.notifications.MentorScheduler.cancelAll(ctx)
+    }
+
     // Legacy alias — old call sites keep compiling.
     suspend fun reset() = hardReset()
 }
