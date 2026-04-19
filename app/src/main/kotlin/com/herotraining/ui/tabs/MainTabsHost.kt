@@ -62,7 +62,9 @@ fun MainTabsHost(
                     onOpenProgress = { tab = TabKind.PROGRESS },
                     onOpenProfile = { tab = TabKind.PROFILE }
                 )
-                TabKind.WORKOUTS -> WorkoutsTabScreen(onBackToHome = { tab = TabKind.HOME })
+                TabKind.WORKOUTS -> com.herotraining.ui.tabs.workouts.WorkoutsTabScreen(
+                    onBackToHome = { tab = TabKind.HOME }
+                )
                 TabKind.QUESTS -> QuestsTabScreen(onBackToHome = { tab = TabKind.HOME })
                 TabKind.PROGRESS -> ProgressTabScreen(onBackToHome = { tab = TabKind.HOME })
                 TabKind.PROFILE -> ProfileTabScreen(

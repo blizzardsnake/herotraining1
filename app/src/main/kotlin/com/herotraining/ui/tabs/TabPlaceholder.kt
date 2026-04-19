@@ -147,18 +147,8 @@ private fun PressableImageButton(
     )
 }
 
-@Composable
-fun WorkoutsTabScreen(onBackToHome: () -> Unit) {
-    TabPlaceholder(
-        title = "ТРЕНИРОВКИ",
-        subtitle = "WORKOUT PROTOCOL",
-        nextRelease = "v0.6 — план тренировок + combo-бар",
-        ctaDrawable = R.drawable.btn_home_start,
-        ctaWidthFraction = 0.40f,
-        ctaAspectRatio = 232f / 65f,   // small "НАЧАТЬ" pill
-        onCtaClick = onBackToHome
-    )
-}
+// WorkoutsTabScreen теперь живёт в ui/tabs/workouts/WorkoutsTabScreen.kt —
+// настоящая тренировка (v0.9+). MainTabsHost импортирует оттуда.
 
 @Composable
 fun QuestsTabScreen(onBackToHome: () -> Unit = {}) {
